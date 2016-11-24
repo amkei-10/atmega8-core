@@ -1,9 +1,7 @@
-# atmega8-core
-
-# currently under construction
+## currently under construction
 * core:datamemory
 
-# Milestones
+## Milestones
 * core
 * pipeline
 * cache
