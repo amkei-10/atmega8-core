@@ -21,7 +21,7 @@
 
 library IEEE;
 use IEEE.STD_LOGIC_1164.ALL;
-use work.pkg_datamem.ALL;
+use work.pkg_datamem.ALL;	-- definitions of selection-codes
 
 -- Uncomment the following library declaration if using
 -- arithmetic functions with Signed or Unsigned values
@@ -33,46 +33,38 @@ use work.pkg_datamem.ALL;
 --use UNISIM.VComponents.all;
 
 entity decoder_mem is
-    Port ( 	addr_r3x 	: in STD_LOGIC_VECTOR (9 downto 0) := "0000000000";
-			--w_e_portb : out STD_LOGIC := '0';
-			--w_e_portc : out STD_LOGIC := '0';
-			--w_e_pinb 	: out STD_LOGIC := '0';
-			--w_e_pinc 	: out STD_LOGIC := '0';
-			--w_e_pind 	: out STD_LOGIC := '0';
-			--w_e_dm 	: out STD_LOGIC := '0';
-			w_e_datamem : in STD_LOGIC := '0';
-			sel_w_e_dm	: out STD_LOGIC_VECTOR (2 downto 0) := "000";
+    Port ( 	addr_r3x 	: in STD_LOGIC_VECTOR (9 downto 0) := "0000000000";			
 			sel_mux_dm 	: out STD_LOGIC_VECTOR (2 downto 0) := "000");
 end decoder_mem;
+
 
 architecture Behavioral of decoder_mem is
 
 begin
 
-	dec_mux: process (addr_r3x)
+	select_mux: process (addr_r3x)
 	begin
 		
-		case addr_r3x(7 downto 0) is
-			-- PIND
-			when "00110000" =>
-				sel_mux_dm <= read_selcode_pind;
-			-- PINC
-			when "00110011" =>
-				sel_mux_dm <= read_selcode_pinc;
+		case addr_r3x is
 			-- PINB
-			when "00110110" =>
+			when "0000110110" =>
 				sel_mux_dm <= read_selcode_pinc;
-			-- PORTC
-			when "00110101" =>
-				sel_mux_dm <= read_selcode_portc;
+			-- PINC
+			when "0000110011" =>
+				sel_mux_dm <= read_selcode_pinc;
+			-- PIND
+			when "0000110000" =>
+				sel_mux_dm <= read_selcode_pind;
 			-- PORTB
-			when "00111000" =>
-				sel_mux_dm <= read_selcode_portb;
+			when "0000111000" =>
+				sel_mux_dm <= read_selcode_portb;			
+			-- PORTC
+			when "0000110101" =>
+				sel_mux_dm <= read_selcode_portc;			
 			when others =>
 				sel_mux_dm <= read_selcode_dm;		
 		end case;
-
-		
+				
 	end process;
 
 end Behavioral;

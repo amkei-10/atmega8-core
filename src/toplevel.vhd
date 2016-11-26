@@ -24,6 +24,7 @@ use IEEE.STD_LOGIC_1164.ALL;
 use IEEE.numeric_std.all;
 use work.pkg_processor.all;
 use work.pkg_instrmem.all;
+use work.pkg_datamem.ALL;	-- definitions of selection-codes
 
 -- Uncomment the following library declaration if using
 -- arithmetic functions with Signed or Unsigned values
@@ -75,35 +76,28 @@ architecture Behavioral of toplevel is
    signal 	sel_mux_alu	: std_logic;
 
    -- outputs of SREG
-   signal state_sreg 	: std_logic_vector(7 downto 0) := "00000000";
+   signal state_sreg 	: std_logic_vector (7 downto 0) := x"00";
    
    -- outputs of Regfile
-   signal data_opa 		: std_logic_vector (7 downto 0) := "00000000";
-   signal data_opb 		: std_logic_vector (7 downto 0) := "00000000";
+   signal data_opa 		: std_logic_vector (7 downto 0) := x"00";
+   signal data_opb 		: std_logic_vector (7 downto 0) := x"00";
    signal addr_r3x 		: std_logic_vector (9 downto 0) := "0000000000";
    
    -- output of multiplexer
-   signal data_mux_ldi	: std_logic_vector (7 downto 0) := "00000000";
-   signal data_mux_im	: std_logic_vector (7 downto 0) := "00000000";
-   signal data_mux_alu	: std_logic_vector (7 downto 0) := "00000000";
+   signal data_mux_ldi	: std_logic_vector (7 downto 0) := x"00";
+   signal data_mux_im	: std_logic_vector (7 downto 0) := x"00";
+   signal data_mux_alu	: std_logic_vector (7 downto 0) := x"00";
+   signal data_mux_dm	: std_logic_vector (7 downto 0) := x"00";
   
    -- output of ALU
-   signal data_alu 		: std_logic_vector (7 downto 0) := "00000000";
-   signal state_alu 		: std_logic_vector(7 downto 0) := "00000000";
-  
-  -- output of datamemory
-  signal data_dm		: std_logic_vector (7 downto 0) := "00000000";
+   signal data_alu 		: std_logic_vector (7 downto 0) := x"00";
+   signal state_alu 	: std_logic_vector (7 downto 0) := x"00";
   
   --output of decoder_mem
---  signal w_e_portb 		: STD_LOGIC;
---  signal w_e_portc 		: STD_LOGIC;
---  signal w_e_pinb 		: STD_LOGIC;
---  signal w_e_pinc 		: STD_LOGIC;
---  signal w_e_pind 		: STD_LOGIC;
---  signal w_e_dm			: std_logic;
-  signal sel_w_e_dm 	: STD_LOGIC_VECTOR (2 downto 0);
   signal sel_mux_dm 	: STD_LOGIC_VECTOR (2 downto 0);
   
+  -- output of datamemory
+  signal data_dm		: std_logic_vector (7 downto 0) := x"00";
   --port (b,c) and pins(b,c,d)
   signal data_portb		: std_logic_vector (7 downto 0); 
   signal data_portc		: std_logic_vector (7 downto 0);
@@ -132,30 +126,19 @@ architecture Behavioral of toplevel is
   component data_mem
     port (
         clk         : in STD_LOGIC;
+        reset		: in STD_LOGIC;
+        w_e_datamem	: in STD_LOGIC;
         data_opa    : in STD_LOGIC_VECTOR (7 downto 0);
-        addr_r3x    : in STD_LOGIC_VECTOR (9 downto 0);
---        w_e_portb	: in STD_LOGIC := '0';
---        w_e_portc	: in STD_LOGIC := '0';
---        w_e_pinb 	: in STD_LOGIC := '0';
---        w_e_pinc 	: in STD_LOGIC := '0';
---        w_e_pind 	: in STD_LOGIC := '0';
---        w_e_dm  	: in STD_LOGIC;        
+        addr_r3x    : in STD_LOGIC_VECTOR (9 downto 0);        
         data_dm     : out STD_LOGIC_VECTOR (7 downto 0);
-        sel_w_e_dm 	: in STD_LOGIC_VECTOR (2 downto 0);
-        sel_mux_dm : in STD_LOGIC_VECTOR (2 downto 0));
+        data_pinb   : out STD_LOGIC_VECTOR (7 downto 0);
+        data_pinc   : out STD_LOGIC_VECTOR (7 downto 0);
+        data_pind   : out STD_LOGIC_VECTOR (7 downto 0));
   end component;
    
   component decoder_mem
     port ( 
 		addr_r3x 	: in STD_LOGIC_VECTOR (9 downto 0);
---        w_e_portb 	: out STD_LOGIC;
---        w_e_portc 	: out STD_LOGIC;
---        w_e_pinb 	: out STD_LOGIC;
---        w_e_pinc 	: out STD_LOGIC;
---        w_e_pind 	: out STD_LOGIC;
---        w_e_dm 		: out STD_LOGIC;
-		w_e_datamem : in STD_LOGIC;
-        sel_w_e_dm 	: out STD_LOGIC_VECTOR (2 downto 0);
         sel_mux_dm 	: out STD_LOGIC_VECTOR (2 downto 0));
   end component;
    
@@ -220,30 +203,19 @@ begin
   -- instance "data_mem_1"
   data_mem_1: data_mem
     port map (
-	  clk      	=> clk,
-      data_opa	=> data_opa,
-      addr_r3x  => addr_r3x,
---      w_e_portb => w_e_portb,
---      w_e_portc => w_e_portc,
---      w_e_pinb  => w_e_pinb,
---      w_e_pinc  => w_e_pinc,
---      w_e_pind  => w_e_pind,
---      w_e_dm 	=> w_e_dm,
-      sel_w_e_dm => sel_w_e_dm,
-      data_dm   => data_dm,
-      sel_mux_dm => sel_mux_dm);
+	  clk      		=> clk,
+	  reset 		=> reset,
+      data_opa		=> data_opa,
+      addr_r3x  	=> addr_r3x,
+      w_e_datamem 	=> w_e_datamem,
+      data_dm   	=> data_dm,
+      data_pinb   	=> data_pinb,
+      data_pinc   	=> data_pinc,
+      data_pind   	=> data_pind);
   
   decoder_mem_1 : decoder_mem
 	port map (
 	  addr_r3x		=> addr_r3x,
---	  w_e_portb		=> w_e_portb,
---	  w_e_portc		=> w_e_portc,
---	  w_e_pinb		=> w_e_pinb,
---	  w_e_pinc		=> w_e_pinc,
---	  w_e_pind		=> w_e_pind,
---	  w_e_dm		=> w_e_dm,
-	  w_e_datamem	=> w_e_datamem,
-      sel_w_e_dm	=> sel_w_e_dm,
 	  sel_mux_dm	=> sel_mux_dm);
   
   -- instance "decoder_1"
@@ -285,15 +257,26 @@ begin
       RES 			=> data_alu,
       state_alu		=> state_alu);
 
-
-
-
+  -- toplevel logic
       
-	data_mux_im  <= data_dcd when (sel_mux_im = '1') else data_opb; 
-	data_mux_ldi <= data_dcd when (sel_mux_ldi = '1') else data_mux_alu;			
-	data_mux_alu <= data_alu when (sel_mux_alu = '1') else data_dm;
+	data_mux_im  <= data_dcd when (sel_mux_im = '1') 	else data_opb; 
+	data_mux_ldi <= data_dcd when (sel_mux_ldi = '1') 	else data_mux_alu;  
+	data_mux_alu <= data_alu when (sel_mux_alu = '1') 	else data_mux_dm;  
 
-	
+--    data_mux_dm <= data_pinb when (sel_mux_dm = read_selcode_pinb) else
+--                   data_pinc when (sel_mux_dm = read_selcode_pinc) else
+--                   data_pind when (sel_mux_dm = read_selcode_pind) else data_dm; 
+
+	process (data_dm, data_pinb, data_pinc, data_pind, sel_mux_dm)
+	begin
+		case sel_mux_dm is
+			when read_selcode_pinb  => data_mux_dm	<= data_pinb;
+			when read_selcode_pinc  => data_mux_dm 	<= data_pinc;
+			when read_selcode_pind  => data_mux_dm 	<= data_pind;
+			when read_selcode_dm  	=> data_mux_dm 	<= data_dm;
+			when others  		    => data_mux_dm 	<= data_dm;
+		end case;
+    end process;
 
 
 	-- purpose: Schreibprozess

@@ -36,60 +36,50 @@ use work.pkg_datamem.ALL;
 
 entity data_mem is
     Port ( clk          : in STD_LOGIC := '0';
-           data_opa     : in STD_LOGIC_VECTOR (7 downto 0) := "00000000";
-           addr_r3x     : in STD_LOGIC_VECTOR (9 downto 0) := "0000000000";           
-           sel_mux_dm   : in STD_LOGIC_VECTOR (2 downto 0) := "000";           
-           sel_w_e_dm   : in STD_LOGIC_VECTOR (2 downto 0) := "000";
+		   reset		: in STD_LOGIC := '0';		   
            
---           w_e_portb: in STD_LOGIC := '0';
---           w_e_portc: in STD_LOGIC := '0';
---           w_e_pinb : in STD_LOGIC := '0';
---           w_e_pinc : in STD_LOGIC := '0';
---           w_e_pind : in STD_LOGIC := '0';
---           w_e_dm 	: in STD_LOGIC := '0';           
-                     
-           data_dm      : out STD_LOGIC_VECTOR (7 downto 0) :="00000000");
+           data_opa     : in STD_LOGIC_VECTOR (7 downto 0) := x"00";
+           addr_r3x     : in STD_LOGIC_VECTOR (9 downto 0) := "0000000000";           
+           w_e_datamem   : in STD_LOGIC := '0';
+           
+           data_dm      : out STD_LOGIC_VECTOR (7 downto 0) :="00000000";           
+           data_pinb	: out STD_LOGIC_VECTOR (7 downto 0) :="00000000";
+           data_pinc	: out STD_LOGIC_VECTOR (7 downto 0) :="00000000";
+           data_pind	: out STD_LOGIC_VECTOR (7 downto 0) :="00000000");
 end data_mem;
 
 architecture Behavioral of data_mem is
-	signal 	portb 	: std_logic_vector (7 downto 0) := "00000000"; 
-	signal 	portc 	: std_logic_vector (7 downto 0) := "00000000";
-	signal 	pinb  	: std_logic_vector (7 downto 0) := "00000000";
-	signal 	pinc  	: std_logic_vector (7 downto 0) := "00000000";
-	signal 	pind  	: std_logic_vector (7 downto 0) := "00000000";
+	--signal 	portb 	: std_logic_vector (7 downto 0) := x"00"; 
+	--signal 	portc 	: std_logic_vector (7 downto 0) := x"00";
+	--signal 	pinb  	: std_logic_vector (7 downto 0) := x"00";
+	--signal 	pinc  	: std_logic_vector (7 downto 0) := x"00";
+	--signal 	pind  	: std_logic_vector (7 downto 0) := x"00";
 	
-	type 	memslot is array(1018 downto 0) of std_logic_vector(7 downto 0);	-- 10bit -> 1024 slots - 5 slots for ports/pins - 1
+	type 	memslot is array(1023 downto 0) of std_logic_vector(7 downto 0);	-- 10bit -> 1024 slots - 5 slots for ports/pins - 1
 	signal 	memory:memslot := (others => (others => '0')); 
+	
+	-- see portmap (was given)
+	constant addr_pinb : integer := 54; -- "0x36"
+	constant addr_pinc : integer := 51;	-- "0x33"
+	constant addr_pind : integer := 48;	-- "0x30"
+	
 begin
 
-	write_data: process (clk, sel_w_e_dm)
+	-- todo: reset behavior (see datasheet p.56 ... enable internal pullup, keep datamem untouched/undefined)
+	write_data: process (clk, w_e_datamem)
 	begin
-	  if clk'event and clk = '1' then  -- rising clock edge
-		
-		case sel_w_e_dm is 
-            when write_selcode_portb => portb <= data_opa;
-            when write_selcode_portc => portc <= data_opa;
-            when write_selcode_pinb  => pinb <= data_opa;
-            when write_selcode_pinc  => pinc <= data_opa;
-            when write_selcode_pind  => pind <= pind;
-            when write_selcode_dm    => memory(to_integer(unsigned(addr_r3x))) <= data_opa;
-            when others => null;
-        end case;
-		
+	  if clk'event and clk = '1' then 
+		if reset = '1' then
+		 null;
+		elsif w_e_datamem = '1' then
+			memory(to_integer(unsigned(addr_r3x))) <= data_opa;
+		end if;
 	  end if;
 	end process write_data;
 
+	data_dm <= memory(to_integer(unsigned(addr_r3x)));	
+	data_pinb <= memory(addr_pinb);
+	data_pinc <= memory(addr_pinc);
+	data_pind <= memory(addr_pind);	
 	
-	process (sel_mux_dm, portb, portc, pinb, pinc, pind) is
-	begin
-      case sel_mux_dm is
-         when read_selcode_portb => data_dm <= portb;
-         when read_selcode_portc => data_dm <= portc;
-         when read_selcode_pinb  => data_dm <= pinb;
-         when read_selcode_pinc  => data_dm <= pinc;
-         when read_selcode_pind  => data_dm <= pind;
-         when others  		     => data_dm <= memory(to_integer(unsigned(addr_r3x)));
-      end case;
-	end process;
-
 end Behavioral;

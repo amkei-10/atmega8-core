@@ -28,20 +28,19 @@ use work.pkg_processor.all;
 
 entity decoder is
   port (
-    Instr       : in  std_logic_vector(15 downto 0) := "0000000000000000";  	-- Eingang vom Programmspeicher
-    state_sreg	: in  std_logic_vector(7 downto 0) := "00000000";				-- SREG
-    addr_opa    : out std_logic_vector(4 downto 0) := "00000";   				-- Adresse von 1. Operand
-    addr_opb    : out std_logic_vector(4 downto 0) := "00000";   				-- Adresse von 2. Operand
-    data_dcd  	: out std_logic_vector(7 downto 0) := "00000000";  				-- Immediate Value
-    OPCODE      : out std_logic_vector(4 downto 0) := "00000";   				-- Opcode für ALU
+    Instr       : in  std_logic_vector(15 downto 0)	:= "0000000000000000";  	-- Eingang vom Programmspeicher
+    state_sreg	: in  std_logic_vector(7 downto 0) 	:= x"00";				-- SREG
+    addr_opa    : out std_logic_vector(4 downto 0) 	:= "00000";   				-- Adresse von 1. Operand
+    addr_opb    : out std_logic_vector(4 downto 0) 	:= "00000";   				-- Adresse von 2. Operand
+    data_dcd  	: out std_logic_vector(7 downto 0) 	:= x"00";  			-- Immediate Value
+    OPCODE      : out std_logic_vector(4 downto 0) 	:= "00000";   				-- Opcode für ALU
     w_e_regfile : out std_logic := '0';    										-- write enable for Registerfile
     w_e_datamem	: out std_logic := '0';    										-- write enable for Datamemory
-    mask_sreg   : out std_logic_vector(7 downto 0) := "00000000"; 				-- SREG bitmask for write_enables
-	rel_pc 		: out std_logic_vector(6 downto 0) := "0000000";				-- relative jump (program_counter)
-	-- hier kommen noch die ganzen Steuersignale der Multiplexer...
-    sel_mux_im   : out std_logic := '0';        								-- Selecteingang für Mux vor RF	    
-    sel_mux_ldi  : out std_logic := '0';
-    sel_mux_alu	 : out std_logic := '0'
+    mask_sreg   : out std_logic_vector(7 downto 0) 	:= x"00"; 				-- SREG bitmask for write_enables
+	rel_pc 		: out std_logic_vector(6 downto 0) 	:= "0000000";				-- relative jump (program_counter)
+    sel_mux_im	: out std_logic := '0';        									-- Selecteingang für Mux vor RF	    
+    sel_mux_ldi : out std_logic := '0';
+    sel_mux_alu	: out std_logic := '0'
     );
 end decoder;
 
@@ -74,7 +73,6 @@ begin  -- Behavioral
 	rel_pc <= "0000000";
 	addr_opa <= Instr(8 downto 4);
     addr_opb <= Instr(9) & Instr (3 downto 0);
-    data_dcd <= "00000000";
       
 	-- SREG: [I][T][H][S][V][N][Z][C]
     case Instr(15 downto 10) is
@@ -97,7 +95,7 @@ begin  -- Behavioral
       
       -- CP: This instruction performs a compare between two registers Rd and Rr. None of the registers are changed.
       when "000101" =>
-        OPCODE <= op_cp;
+        OPCODE <= op_sub;
         mask_sreg <= "00111111";
       
       -- ROL: Shifts all bits in Rd one place to the left. The C Flag is shifted into bit 0 of Rd. Bit 7 is shifted into the C Flag. 
@@ -124,21 +122,19 @@ begin  -- Behavioral
 	  when "001011" =>
         OPCODE <= op_mov;
         w_e_regfile <= '1';
-      
-
-      -- LD
-      
+ 
       -- INC
       
-      when "100100" =>
+      when "100000" =>
 		-- Load / Store
-		case Instr(0) & Instr(3 downto 0) is 
+		case Instr(9) & Instr(3 downto 0) is 
 			-- LD
-			when "01100" =>
+			when "00000" =>
 				OPCODE <= op_ld;
 				sel_mux_alu <= '0';
+				w_e_regfile <= '1';
 			-- ST
-			when "11100" =>
+			when "10000" =>
 				OPCODE <= op_st;
 				w_e_datamem <= '1';
 			when others => null;
@@ -146,23 +142,32 @@ begin  -- Behavioral
 		
       --branch commandset A
 	  when "111101" =>
-		case Instr (2 downto 0) is 
-		
+		case Instr (2 downto 0) is 				
 			-- brcc ( Branch if Carry Cleared)
 			when "000" => 
 				if state_sreg(0) = '0' then
 					rel_pc <= Instr(9 downto 3);
-				end if;
-				
+				end if;				
 			-- brne ( Branch if Not Equal)
 			when "001" => 
 				if state_sreg(1) = '0' then
 					rel_pc <= Instr(9 downto 3);
-				end if;
-			when others => null;			
-		
+				end if;				
+			when others => null;		
 		end case;
 
+	--branch commandset B
+	  when "111100" =>
+		case Instr (2 downto 0) is 
+			
+			-- breq ( Branch if Equal)
+			when "001" => 
+				if state_sreg(1) = '1' then
+					rel_pc <= Instr(9 downto 3);
+				end if;
+			when others => null;
+		end case;	
+			
 		
       when "100101" =>
 		addr_opa <= Instr(8 downto 4);
@@ -195,42 +200,47 @@ begin  -- Behavioral
 				OPCODE <= op_lsl;
 				mask_sreg <= "00011111";				
 
-			when others => null;
+			when others => w_e_regfile <= '0';
 		end case;
 		
       -- immediate commands
       when others =>
         sel_mux_im <= '1';
-        w_e_regfile <= '1';
         addr_opa <= '1' & Instr(7 downto 4);
-        data_dcd <= Instr(11 downto 8) & Instr(3 downto 0);
-            
+        
         case Instr(15 downto 12) is          
           -- LDI
           when "1110" =>
-            --OPCODE <= op_ldi;
             OPCODE <= op_nop;
             sel_mux_ldi <= '1';
-            
+            w_e_regfile <= '1';
             
           -- CPI
           when "0011" =>
-            OPCODE <= op_cpi;
+            OPCODE <= op_sub;
+            mask_sreg <= "00111111";
+            
           -- SUBI
           when "0101" =>
-            OPCODE <= op_subi;
-            
+            OPCODE <= op_sub;
+            mask_sreg <= "00111111";
+            w_e_regfile <= '1';
+                        
           -- ORI
           when "0111" =>
-			OPCODE <= op_ori;
+			OPCODE <= op_or;
+			mask_sreg <= "00011110";
+            w_e_regfile <= '1';
+            			
           -- ANDI
           when "0110" =>
-            OPCODE <= op_andi;
-          
-          
+            OPCODE <= op_and;
+            mask_sreg <= "00011110";
+            w_e_regfile <= '1';
+                      
           -- RJMP
           when "1100" =>  
-			rel_pc <= Instr (6 downto 0);
+			rel_pc <= Instr (6 downto 0);			
             
           when others => null;
         end case;

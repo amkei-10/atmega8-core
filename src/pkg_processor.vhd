@@ -21,16 +21,10 @@ package pkg_processor is
 	constant op_dec : 		std_logic_vector(4 downto 0) := "01011";	 -- DEC
 
 	constant op_inc : 		std_logic_vector(4 downto 0) := "01100";	 -- INC
-	constant op_lsr : 		std_logic_vector(4 downto 0) := "01101";	 -- LSR
+	constant op_lsr : 		std_logic_vector(4 downto 0) := "01101";	 -- LSR	
+	constant op_lsl: 		std_logic_vector(4 downto 0) := "01110";	
+	constant op_ld: 		std_logic_vector(4 downto 0) := "01111";
 	
-	constant op_subi: 		std_logic_vector(4 downto 0) := "01111";  -- Subtraction immediatly	
-	constant op_cpi: 		std_logic_vector(4 downto 0) := "10000";
-	constant op_andi: 		std_logic_vector(4 downto 0) := "10001";
-	constant op_ori: 		std_logic_vector(4 downto 0) := "10010";
-	
-	constant op_lsl: 		std_logic_vector(4 downto 0) := "10011";
-	
-	constant op_ld: 		std_logic_vector(4 downto 0) := "10100";
-	constant op_st: 		std_logic_vector(4 downto 0) := "10101";
+	constant op_st: 		std_logic_vector(4 downto 0) := "10000";
 	
 end pkg_processor;
