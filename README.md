@@ -1,18 +1,10 @@
 ## Milestones
-<<<<<<< 93eb226a495af9b142eeacdf5a6a502710d51099
-* core
-* pipeline
-* cache
-
-## currently under construction
-* core:datamemory
-=======
 -core
 -pipeline
 -cache
 
 ## currently under construction
--core:datamemory
+-core: I/O
 
 ## instructionset
 | state | bincode | mnem |
@@ -103,4 +95,3 @@
 |   x   | 100!001rrrrree-+ | st   |
 |       | 1001010100011001 | eicall|
 |       | 1001010000011001 | eijmp|
->>>>>>> f0a7d01e49c706d3c50c991a0af675d9b33424ef
