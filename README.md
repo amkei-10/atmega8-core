@@ -1,10 +1,10 @@
 ## Milestones
--core
--pipeline
--cache
+- core
+- pipeline
+- cache
 
 ## currently under construction
--core: I/O
+- core: I/O
 
 ## instructionset
 | state | bincode | mnem |
