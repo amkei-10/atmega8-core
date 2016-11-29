@@ -35,13 +35,14 @@ entity decoder is
     data_dcd  	: out std_logic_vector(7 downto 0) 	:= x"00";  			-- Immediate Value
     OPCODE      : out std_logic_vector(4 downto 0) 	:= "00000";   				-- Opcode für ALU
     w_e_regfile : out std_logic := '0';    										-- write enable for Registerfile
-    w_e_datamem	: out std_logic := '0';    										-- write enable for Datamemory
+    w_e_memory	: out std_logic := '0';    										-- write enable for Datamemory
     mask_sreg   : out std_logic_vector(7 downto 0) 	:= x"00"; 				-- SREG bitmask for write_enables
 	rel_pc 		: out std_logic_vector(6 downto 0) 	:= "0000000";				-- relative jump (program_counter)
-    sel_mux_im	: out std_logic := '0';        									-- Selecteingang für Mux vor RF	    
-    sel_mux_ldi : out std_logic := '0';
-    sel_mux_alu	: out std_logic := '0'
-    );
+    sel_im		: out std_logic := '0';        									-- Selecteingang für Mux vor RF	    
+    sel_ldi 	: out std_logic := '0';
+    sel_alu		: out std_logic := '0';
+    push		: out std_logic;
+    pop			: out std_logic);
 end decoder;
 
 architecture Behavioral of decoder is
@@ -65,11 +66,11 @@ begin  -- Behavioral
     --addr_opb <= "00000";
     OPCODE <= op_NOP;
     w_e_regfile <= '0';
-    w_e_datamem <= '0';
+    w_e_memory <= '0';
     mask_sreg <= "00000000";
-    sel_mux_im <= '0';
-    sel_mux_ldi <= '0';
-    sel_mux_alu <= '1';
+    sel_im <= '0';
+    sel_ldi <= '0';
+    sel_alu <= '1';
 	rel_pc <= "0000000";
 	addr_opa <= Instr(8 downto 4);
     addr_opb <= Instr(9) & Instr (3 downto 0);
@@ -131,12 +132,12 @@ begin  -- Behavioral
 			-- LD
 			when "00000" =>
 				OPCODE <= op_ld;
-				sel_mux_alu <= '0';
+				sel_alu <= '0';
 				w_e_regfile <= '1';
 			-- ST
 			when "10000" =>
 				OPCODE <= op_st;
-				w_e_datamem <= '1';
+				w_e_memory <= '1';
 			when others => null;
 		end case;
 		
@@ -205,14 +206,14 @@ begin  -- Behavioral
 		
       -- immediate commands
       when others =>
-        sel_mux_im <= '1';
+        sel_im <= '1';
         addr_opa <= '1' & Instr(7 downto 4);
         
         case Instr(15 downto 12) is          
           -- LDI
           when "1110" =>
             OPCODE <= op_nop;
-            sel_mux_ldi <= '1';
+            sel_ldi <= '1';
             w_e_regfile <= '1';
             
           -- CPI
