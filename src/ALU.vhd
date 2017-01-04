@@ -53,17 +53,8 @@ begin
     
     case OPCODE is
 
-      when op_add =>
+      when op_add | op_sub | op_inc | op_dec | op_adc =>
         erg <= std_logic_vector(unsigned(OPA) + unsigned(OPB));
-
-      when op_sub =>
-        erg <= std_logic_vector(unsigned(OPA) - unsigned(OPB));
-        
-      when op_dec =>
-        erg <= std_logic_vector(unsigned(OPA) - 1);
-        
-      when op_inc =>
-        erg <= std_logic_vector(unsigned(OPA) + 1);
 
 	  when op_com =>
         erg <= std_logic_vector(x"FF" - unsigned(OPA));
@@ -79,12 +70,12 @@ begin
         
       when op_mov =>
         erg <= OPB;
-      
-      when op_lsl => 
-		erg <= OPA(6 downto 0) & '0';
 		
 	  when op_lsr => 
 		erg <= '0' & OPA(7 downto 1);
+        
+       when op_asr => 
+		erg <= OPA(7) & OPA(7 downto 1);
         
       when others => null;
     end case;
@@ -96,7 +87,7 @@ begin
   -- type   : combinational
   -- inputs : OPA, OPB, OPCODE, erg
   -- outputs: z, c, v, n
-  Berechnung_SREG: process (OPA, OPB, OPCODE, erg, n, c)
+  Berechnung_SREG: process (OPA, OPB, OPCODE, erg, n, c)	
   begin  -- process Berechnung_SREG
     z<=not (erg(7) or erg(6) or erg(5) or erg(4) or erg(3) or erg(2) or erg(1) or erg(0));
 
@@ -107,19 +98,14 @@ begin
     v <= '0';
     
     case OPCODE is
-      -- ADD
-      when op_add =>
+      -- ADD or ADC
+      when op_add | op_adc =>
 		c<=(OPA(7) AND OPB(7)) OR (OPB(7) AND not erg(7)) OR (not erg(7) AND OPA(7));
 		v<=(OPA(7) AND OPB(7) AND (not erg(7))) OR ((not OPA(7)) and (not OPB(7)) and  erg(7));
       
       -- INC
 	  when op_inc =>
-		v<=erg(7) and not(erg(6) or erg(5) or erg(4) or erg(3) or erg(2) or erg(1) or erg(0));  
-      
-      -- ADC
-	  when op_adc =>
-		c<=(OPA(7) and OPB(7)) or (OPB(7) and not erg(7)) or (not erg(7) and OPA(7));
-		v<=(OPA(7) and OPB(7) and not erg(7)) or (not OPA(7) and not OPB(7) and erg(7));
+		v<=erg(7) and not(erg(6) or erg(5) or erg(4) or erg(3) or erg(2) or erg(1) or erg(0));        
 		  
       -- SUB
       -- SUBI
@@ -144,18 +130,12 @@ begin
 		v<=(not erg(7) and erg(6) and erg(5) and erg(4) and erg(3) and erg(2) and erg(1) and erg(0));		
 		
 	  -- LSL
-	  when op_lsl =>
-		c<=OPA(7);
-		v<=(n xor c);
+	  --when op_lsl =>
+		--c<=OPA(7);
+		--v<=(n xor c);
 		
-	  -- LSR
-	  when op_lsr =>
-		c<=OPA(0);
-		n<='0';
-		v<=(n xor c);
-
-	  -- EOR
-	  when op_eor =>
+	  -- LSR or EOR
+	  when op_lsr | op_eor =>
 		c<=OPA(0);
 		n<='0';
 		v<=(n xor c);
@@ -163,8 +143,7 @@ begin
 	  -- AND / ANDI
 	  when op_and =>
 	    v<='0';
-	    n<=erg(7);
-	    
+	    n<=erg(7);	    
 
       when others => null;
     end case;

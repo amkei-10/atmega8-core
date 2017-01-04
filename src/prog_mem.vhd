@@ -24,6 +24,7 @@ use IEEE.STD_LOGIC_1164.ALL;
 
 library work;
 use work.pkg_instrmem.all;
+use work.pkg_processor.all;
 
 -- following library declaration if using
 -- arithmetic functions with Signed or Unsigned values
@@ -35,13 +36,13 @@ use IEEE.NUMERIC_STD.ALL;
 --use UNISIM.VComponents.all;
 
 entity prog_mem is
-    Port ( addr_pm : in STD_LOGIC_VECTOR (8 downto 0);
-           Instr : out STD_LOGIC_VECTOR (15 downto 0));
+    Port ( addr 	: in unsigned (PMADDR_WIDTH-1 downto 0);
+           Instr 	: out STD_LOGIC_VECTOR (15 downto 0));
 end prog_mem;
 
 architecture Behavioral of prog_mem is
 
 begin
-  Instr <= PROGMEM(to_integer(unsigned(addr_pm)));
+  Instr <= PROGMEM(to_integer(addr));
 
 end Behavioral;

@@ -21,11 +21,8 @@
 
 library IEEE;
 use IEEE.STD_LOGIC_1164.ALL;
-use work.pkg_datamem.ALL;	-- definitions of selection-codes
-
--- Uncomment the following library declaration if using
--- arithmetic functions with Signed or Unsigned values
---use IEEE.NUMERIC_STD.ALL;
+use IEEE.NUMERIC_STD.ALL;
+use work.pkg_processor.ALL;	-- definitions of selection-codes
 
 -- Uncomment the following library declaration if instantiating
 -- any Xilinx leaf cells in this code.
@@ -33,96 +30,68 @@ use work.pkg_datamem.ALL;	-- definitions of selection-codes
 --use UNISIM.VComponents.all;
 
 entity decoder_mem is
-    Port ( 	addr_r3x 	: in STD_LOGIC_VECTOR (9 downto 0) := "0000000000";		
-			w_e_memory	: in std_logic;
-			sel_memory	: out std_logic_vector(3 downto 0);
-			w_e_portb	: out std_logic;
-			w_e_portc	: out std_logic;
-			w_e_dm		: out std_logic;
-			w_e_segen	: out std_logic;
-		    w_e_seg0	: out std_logic;
-		    w_e_seg1	: out std_logic;
-		    w_e_seg2	: out std_logic;
-		    w_e_seg3	: out std_logic);
+    Port ( 	w_e_out		: out bit;			
+			addr_in 	: in STD_LOGIC_VECTOR (9 downto 0);
+			addr_out	: out STD_LOGIC_VECTOR (9 downto 0);
+			ram_en		: out bit;
+			sel_mdec	: out bit;
+			mdec_op		: in std_logic_vector(3 downto 0));
 end decoder_mem;
 
 
 architecture Behavioral of decoder_mem is
-    signal selector:std_logic_vector(3 downto 0);
+	--signal 	stack_ptr : unsigned(9 downto 0) := (others => '1');
 begin
 
-	-- selection for memory-output-multiplexer
-	memory_selection:process (addr_r3x)
-	begin	
-		case addr_r3x(7 downto 0) is		
-			
-			--pinb/c/d
-			when def_addr_pinb =>
-				selector <= selcode_mem_pinb;
-			when def_addr_pinc =>
-				selector <= selcode_mem_pinc;
-			when def_addr_pind =>
-				selector <= selcode_mem_pind;
-			
-			-- portb/c
-			when def_addr_portb =>
-				selector <= selcode_mem_portb;
-			when def_addr_portc =>
-				selector <= selcode_mem_portc;
-			
-			-- 7 segment
-			when def_addr_segen =>
-				selector <= selcode_mem_segen;
-			when def_addr_seg0 =>
-				selector <= selcode_mem_seg0;
-			when def_addr_seg1 =>
-				selector <= selcode_mem_seg1;			
-			when def_addr_seg2 =>
-				selector <= selcode_mem_seg2;
-			when def_addr_seg3 =>
-				selector <= selcode_mem_seg3;
-			
-			-- data memory
-			when others =>
-				selector <= selcode_mem_dm;				
-		end case;				
-	end process;
-
-
-	--select w_e_wire to related memory
-	select_memory_w_e:process(selector, w_e_memory)
+	--memptr_config:process(trigger, addr_in, w_e_in, push, pop)
+	memptr_config:process(mdec_op, addr_in)
+		variable stack_ptr : unsigned(9 downto 0) := (others => '1');
 	begin
-		w_e_portb <= '0';
-		w_e_portc <= '0';
-		w_e_dm <= '0';
-		w_e_segen <= '0';
-		w_e_seg0 <= '0';
-		w_e_seg1 <= '0';
-		w_e_seg2 <= '0';
-		w_e_seg3 <= '0';
-		if w_e_memory = '1' then
-			case selector is
-				when selcode_mem_portb =>
-					w_e_portb <= '1';
-				when selcode_mem_portc =>
-					w_e_portc <= '1';
-				when selcode_mem_segen =>
-					w_e_segen <= '1';
-				when selcode_mem_seg0 =>
-					w_e_seg0 <= '1';
-				when selcode_mem_seg1 =>
-					w_e_seg1 <= '1';
-				when selcode_mem_seg2 =>
-					w_e_seg2 <= '1';
-				when selcode_mem_seg3 =>
-					w_e_seg3 <= '1';
-				when selcode_mem_dm =>
-					w_e_dm <= '1';					
-				when others => null;
-			end case;
-		end if;
+		
+		ram_en <= '1';
+			
+		case mdec_op(2 downto 0) is 
+					
+			--PUSH stores the contents of register Rr on the STACK. The Stack Pointer is post-decremented by 1 after the PUSH.
+			--PUSH + RCALL
+			when mdec_op_rcall | mdec_op_push => 
+				addr_out <= std_logic_vector(stack_ptr);
+				stack_ptr := stack_ptr-1;
+							
+			--POP loads register Rd with a byte from the STACK. The Stack Pointer is pre-incremented by 1 before the POP.
+			--POP + RET
+			when mdec_op_ret | mdec_op_pop =>
+				if not (stack_ptr = "1111111111") then
+					stack_ptr := stack_ptr+1;
+					addr_out <= std_logic_vector(stack_ptr);						
+				else
+					addr_out <= std_logic_vector(stack_ptr);
+				end if;
+					
+			when others => 
+				ram_en <= '0';
+			
+				case addr_in(9 downto 0) is		
+			
+					when def_addr_pinb =>	addr_out <= (9 downto 4 => '0')&"0000";
+					when def_addr_pinc =>	addr_out <= (9 downto 4 => '0')&"0001";
+					when def_addr_pind =>	addr_out <= (9 downto 4 => '0')&"0010";
+					when def_addr_portb =>	addr_out <= (9 downto 4 => '0')&"0011";
+					when def_addr_portc =>	addr_out <= (9 downto 4 => '0')&"0100";
+					when def_addr_segen =>	addr_out <= (9 downto 4 => '0')&"0101";
+					when def_addr_seg0 =>	addr_out <= (9 downto 4 => '0')&"0110";
+					when def_addr_seg1 =>	addr_out <= (9 downto 4 => '0')&"0111";
+					when def_addr_seg2 =>	addr_out <= (9 downto 4 => '0')&"1000";
+					when def_addr_seg3 =>	addr_out <= (9 downto 4 => '0')&"1001";
+
+					when others =>
+						ram_en <= '1';
+						addr_out <= addr_in;
+				end case;	
+		end case;		
 	end process;
 
-	sel_memory <= selector;
-
+	sel_mdec <= to_bit(mdec_op(1) and mdec_op(0));	-- push & pop
+	w_e_out <= to_bit(mdec_op(2));					-- w_e
+	
 end Behavioral;

@@ -22,9 +22,9 @@
 library IEEE;
 use IEEE.STD_LOGIC_1164.ALL;
 use IEEE.numeric_std.all;
+
 use work.pkg_processor.all;
 use work.pkg_instrmem.all;
-use work.pkg_datamem.ALL;	-- definitions of selection-codes
 
 -- Uncomment the following library declaration if using
 -- arithmetic functions with Signed or Unsigned values
@@ -40,15 +40,18 @@ entity toplevel is
 		--reset 	: in STD_LOGIC;
 		clk   		: in STD_LOGIC;
 		
-		hw_seg_enbl	: out std_logic_vector (3 downto 0);
-		hw_seg_cont	: out std_logic_vector (7 downto 0);
+		hw_seg_enbl	: out std_logic_vector (3 downto 0) := (others => '0');
+		hw_seg_cont	: out std_logic_vector (7 downto 0) := (others => '0');
 		
-		hw_portb	: out std_logic_vector (7 downto 0);
-		hw_portc	: out std_logic_vector (7 downto 0);
+		hw_portb	: out std_logic_vector (7 downto 0) := (others => '0');
+		hw_portc	: out std_logic_vector (7 downto 0) := (others => '0');
 		
-		hw_pinb		: in std_logic_vector (7 downto 0);
-		hw_pinc		: in std_logic_vector (7 downto 0);
-		hw_pind		: in std_logic_vector (4 downto 0));
+		--hw_pinb		: in std_logic_vector (7 downto 0) := (others => '0');
+		--hw_pinc		: in std_logic_vector (7 downto 0) := (others => '0');
+		--hw_pind		: in std_logic_vector (4 downto 0) := (others => '0'));
+		hw_pinb		: in std_logic_vector (7 downto 0) := "00010000";
+		hw_pinc		: in std_logic_vector (7 downto 0) := "00010000";
+		hw_pind		: in std_logic_vector (4 downto 0) := "00010");
 
 end toplevel;
 
@@ -57,128 +60,128 @@ architecture Behavioral of toplevel is
   -- Internal signal declarations
   -----------------------------------------------------------------------------
 
-  -- outputs of "Program_Counter_1"
-  signal addr_pm 			: STD_LOGIC_VECTOR (8 downto 0);
+	-- outputs of "prog_cnt_1"
+  	signal addr_pm 		: unsigned (PMADDR_WIDTH-1 downto 0);
 
-  -- outputs of "prog_mem_1"
-  signal Instr 			: STD_LOGIC_VECTOR (15 downto 0);
+	-- outputs of "prog_mem_1"
+	signal Instr 		: STD_LOGIC_VECTOR (15 downto 0);
 
-  -- outputs of "decoder_1"
-   signal  	addr_opa    : std_logic_vector(4 downto 0);
-   signal  	addr_opb    : std_logic_vector(4 downto 0);
-   signal  	data_dcd   	: std_logic_vector(7 downto 0);					-- used for wiring immediate data
-   signal  	OPCODE      : std_logic_vector(4 downto 0);
-   signal  	mask_sreg   : std_logic_vector(7 downto 0);
-   signal 	rel_pc		: std_logic_vector(6 downto 0);
-   signal	w_e_memory	: std_logic;
-   signal  	w_e_regfile : std_logic;
-   signal 	sel_im 		: std_logic;
-   signal 	sel_ldi		: std_logic;
-   signal 	sel_alu		: std_logic;
-
-   -- outputs of SREG
-   signal state_sreg 	: std_logic_vector (7 downto 0) := x"00";
+	-- outputs of "decoder_1"
+ 	signal 	addr_opa    : std_logic_vector(4 downto 0);
+ 	signal 	addr_opb    : std_logic_vector(5 downto 0);
+ 	signal 	data_dcd   	: std_logic_vector(7 downto 0);					-- used for wiring immediate data
+ 	signal 	OPCODE      : std_logic_vector(4 downto 0);
+ 	signal 	mask_sreg   : std_logic_vector(7 downto 0);
+ 	signal 	rel_pc		: std_logic_vector(PMADDR_WIDTH-1 downto 0);
+ 	signal	abs_jmp		: bit;
+ 	signal 	w_e_regf 	: bit;
+ 	--signal 	sel_im 		: std_logic;
+ 	signal 	sel_ldi		: bit;
+ 	signal 	sel_alu		: bit;
+ 	signal 	sel_opb		: bit_vector(2 downto 0);
+    signal 	sel_bconst	: bit_vector(1 downto 0);
+    signal 	sel_maddr	: bit;
+	signal  mdec_op		: std_logic_vector(3 downto 0);
+	
+	-- outputs of SREG
+ 	signal state_sreg 	: std_logic_vector (7 downto 0) := (others => '0');
    
-   -- outputs of Regfileread_selcode_pind
-   signal data_opa 		: std_logic_vector (7 downto 0) := x"00";
-   signal data_opb 		: std_logic_vector (7 downto 0) := x"00";
-   signal addr_r3x 		: std_logic_vector (9 downto 0) := "0000000000";
+    -- outputs of Regfile
+ 	signal data_opa 	: std_logic_vector (7 downto 0) := (others => '0');
+ 	signal data_opb 	: std_logic_vector (7 downto 0) := (others => '0');
+ 	signal addr_r3x_regf: std_logic_vector (9 downto 0) := (others => '0');
    
-   -- output of multiplexer
-   signal data_mux_ldi	: std_logic_vector (7 downto 0) := x"00";
-   signal data_mux_im	: std_logic_vector (7 downto 0) := x"00";
-   signal data_mux_alu	: std_logic_vector (7 downto 0) := x"00";
-   signal data_mux_dm	: std_logic_vector (7 downto 0) := x"00";
+	-- output of multiplexer
+ 	signal data_mux_ldi	: std_logic_vector (7 downto 0) := (others => '0');
+ 	signal data_mux_im	: std_logic_vector (7 downto 0) := (others => '0');
+ 	signal data_mux_alu	: std_logic_vector (7 downto 0) := (others => '0');
+ 	signal data_mux_dm	: std_logic_vector (7 downto 0) := (others => '0');
+ 	signal data_mux_pc	: unsigned (PMADDR_WIDTH-1 downto 0) := (others => '0');
+ 	signal data_mux_mdec: std_logic_vector (PMADDR_WIDTH-1 downto 0);
+	signal data_mux_opb	: std_logic_vector (7 downto 0) := (others => '0');
+	signal data_mux_bconst	: std_logic_vector (7 downto 0) := (others => '0');
+	signal data_mux_addrio  : std_logic_vector (9 downto 0) := (others => '0');
+	
+	-- output of ALU
+	signal data_alu 	: std_logic_vector (7 downto 0) := (others => '0');
+	signal state_alu 	: std_logic_vector (7 downto 0) := (others => '0');
   
-   -- output of ALU
-   signal data_alu 		: std_logic_vector (7 downto 0) := x"00";
-   signal state_alu 	: std_logic_vector (7 downto 0) := x"00";
+	--output of decoder_mem
+	signal addr_r3x_mdec: STD_LOGIC_VECTOR (9 downto 0);
+	signal ram_en		: bit;
+	signal sel_mdec		: bit;
+	signal w_e_memory	: bit;
   
-  --output of decoder_mem
-  signal sel_memory : std_logic_vector (3 downto 0);
-  signal w_e_portb	: std_logic;
-  signal w_e_portc	: std_logic;
-  signal w_e_dm		: std_logic;
-  signal w_e_segen	: std_logic;
-  signal w_e_seg0	: std_logic;
-  signal w_e_seg1	: std_logic;
-  signal w_e_seg2	: std_logic;
-  signal w_e_seg3	: std_logic;
+	-- output of datamemory
+	signal data_dm		: std_logic_vector (PMADDR_WIDTH-1 downto 0);
   
-  -- output of datamemory
-  signal data_dm	: std_logic_vector (7 downto 0);
-  
-  --outputs of io_regs
-  signal data_pinb_o	: std_logic_vector (7 downto 0);
-  signal data_pinc_o	: std_logic_vector (7 downto 0);
-  signal data_pind_o	: std_logic_vector (7 downto 0);
-  signal data_portb_o	: std_logic_vector (7 downto 0);
-  signal data_portc_o	: std_logic_vector (7 downto 0);
-  signal data_segen_o	: std_logic_vector (7 downto 0);
-  signal data_seg0_o	: std_logic_vector (7 downto 0);
-  signal data_seg1_o	: std_logic_vector (7 downto 0);
-  signal data_seg2_o	: std_logic_vector (7 downto 0);
-  signal data_seg3_o	: std_logic_vector (7 downto 0);
-  
-  --hw-input if io regs
-  signal data_pinb_i	: std_logic_vector (7 downto 0);
-  signal data_pinc_i	: std_logic_vector (7 downto 0);
-  signal data_pind_i	: std_logic_vector (7 downto 0);
-  
-  signal reset			: std_logic;
-  
-  
-
+	--outputs of io_mem
+	signal data_portb	: std_logic_vector (7 downto 0);
+	signal data_portc	: std_logic_vector (7 downto 0);
+	signal data_segen	: std_logic_vector (7 downto 0);
+	signal data_segcont	: std_logic_vector (7 downto 0);
+	signal data_io		: std_logic_vector (7 downto 0);
+     
+	signal reset		: std_logic; 
+	signal data_opb_alu	: std_logic_vector (7 downto 0);
   
   -----------------------------------------------------------------------------
   -- Component declarations
   -----------------------------------------------------------------------------
 
-  component Program_Counter
+  component prog_cnt
     port (
-      reset 		: in  STD_LOGIC;
       clk   		: in  STD_LOGIC;
-      addr_pm  		: out STD_LOGIC_VECTOR (8 downto 0);
-      rel_pc		: in std_logic_vector(6 downto 0));
+      reset 		: in  STD_LOGIC;
+      abs_jmp 		: in  bit;
+      addr_in		: in unsigned(PMADDR_WIDTH-1 downto 0);      
+      addr_out 		: out unsigned (PMADDR_WIDTH-1 downto 0));
   end component;
 
   component prog_mem
     port (
-      addr_pm  		: in  STD_LOGIC_VECTOR (8 downto 0);
+      addr  		: in  unsigned (PMADDR_WIDTH-1 downto 0);
       Instr 		: out STD_LOGIC_VECTOR (15 downto 0));
   end component;
    
-  component data_mem
+  component blockram_mem
     port (
         clk         : in STD_LOGIC;
-        reset		: in STD_LOGIC;
-        w_e			: in STD_LOGIC;
-        data_in    	: in STD_LOGIC_VECTOR (7 downto 0);
-        addr_r3x    : in STD_LOGIC_VECTOR (9 downto 0);        
-        data_out    : out STD_LOGIC_VECTOR (7 downto 0));
+        data_in    	: in STD_LOGIC_VECTOR (PMADDR_WIDTH-1 downto 0);
+        addr    	: in STD_LOGIC_VECTOR (9 downto 0);        
+        w_e			: in bit;
+        en			: in bit;        
+        data_out    : out STD_LOGIC_VECTOR (PMADDR_WIDTH-1 downto 0));
   end component;
   
-  component io_reg
-    port(clk		: in std_logic;
-		 reset		: in std_logic;
-		 w_e		: in std_logic;
-		 data_in    : in  std_logic_vector(7 downto 0);
-		 data_out   : out std_logic_vector (7 downto 0));
+  component io_mem
+    port(clk      	: in STD_LOGIC;
+		 reset		: in STD_LOGIC;           
+         data_in	: in STD_LOGIC_VECTOR (7 downto 0);
+         addr		: in STD_LOGIC_VECTOR (9 downto 0);           
+         w_e      	: in bit;
+         dsbl		: in bit;
+           
+         data_pinb : in STD_LOGIC_VECTOR (7 downto 0);
+         data_pinc : in STD_LOGIC_VECTOR (7 downto 0);
+         data_pind : in STD_LOGIC_VECTOR (4 downto 0);
+           
+         data_portb : out STD_LOGIC_VECTOR (7 downto 0);
+         data_portc : out STD_LOGIC_VECTOR (7 downto 0);         
+         data_segen : out STD_LOGIC_VECTOR (7 downto 0);
+         data_segcont : out STD_LOGIC_VECTOR (7 downto 0);         
+              
+		 data_out : out STD_LOGIC_VECTOR (7 downto 0));
   end component;
      
   component decoder_mem
     port ( 
-		addr_r3x 	: in STD_LOGIC_VECTOR (9 downto 0);
-		w_e_memory	: in std_logic;
-		sel_memory	: out std_logic_vector(3 downto 0);
-		w_e_portb	: out std_logic;
-		w_e_portc	: out std_logic;
-		w_e_dm		: out std_logic;
-		w_e_segen	: out std_logic;
-		w_e_seg0	: out std_logic;
-		w_e_seg1	: out std_logic;
-		w_e_seg2	: out std_logic;
-		w_e_seg3	: out std_logic);
+		w_e_out		: out bit;
+		addr_in 	: in STD_LOGIC_VECTOR (9 downto 0);
+		addr_out	: out STD_LOGIC_VECTOR (9 downto 0);
+		ram_en		: out bit;
+		sel_mdec	: out bit;
+		mdec_op	: in std_logic_vector(3 downto 0));
   end component;
    
   component decoder
@@ -186,24 +189,28 @@ architecture Behavioral of toplevel is
       Instr         : in  std_logic_vector(15 downto 0);
       state_sreg	: in  std_logic_vector(7 downto 0);
       addr_opa      : out std_logic_vector(4 downto 0);
-      addr_opb      : out std_logic_vector(4 downto 0);
+      addr_opb      : out std_logic_vector(5 downto 0);
       OPCODE        : out std_logic_vector(4 downto 0);
-      w_e_regfile   : out std_logic;
-      w_e_memory 	: out std_logic;
+      w_e_regf   	: out bit;
       mask_sreg     : out std_logic_vector(7 downto 0);
-      rel_pc		: out std_logic_vector(6 downto 0);
-      sel_im 		: out std_logic;
-      sel_ldi		: out std_logic;
-      sel_alu 		: out std_logic;
-      data_dcd		: out std_logic_vector(7 downto 0));
+      rel_pc		: out std_logic_vector(PMADDR_WIDTH-1 downto 0);
+      abs_jmp		: out bit;
+      --sel_im 		: out std_logic;
+      sel_ldi		: out bit;
+      sel_alu 		: out bit;
+      data_dcd		: out std_logic_vector(7 downto 0);
+      sel_opb		: out bit_vector(2 downto 0);
+	  sel_bconst	: out bit_vector(1 downto 0);
+	  sel_maddr		: out bit;
+	  mdec_op		: out std_logic_vector(3 downto 0));
   end component;
   
   component Reg_File
     port (
       clk           : in  STD_LOGIC;
+      w_e   		: in  bit;
       addr_opa      : in  STD_LOGIC_VECTOR (4 downto 0);
-      addr_opb      : in  STD_LOGIC_VECTOR (4 downto 0);
-      w_e_regfile   : in  STD_LOGIC;
+      addr_opb      : in  STD_LOGIC_VECTOR (4 downto 0);      
       data_opa      : out STD_LOGIC_VECTOR (7 downto 0);
       data_opb      : out STD_LOGIC_VECTOR (7 downto 0);
       data_ldi      : in  STD_LOGIC_VECTOR (7 downto 0);
@@ -225,237 +232,146 @@ begin
   -- Component instantiations
   -----------------------------------------------------------------------------
 
-  -- instance "Program_Counter_1"
-  Program_Counter_1: Program_Counter
+  -- instance "prog_cnt_1"
+  prog_cnt_1: prog_cnt
     port map (
-      reset 	=> reset,
-      clk   	=> clk,
-      addr_pm  	=> addr_pm,
-      rel_pc 	=> rel_pc);
+      clk   		=> clk,
+      reset 		=> reset,
+      abs_jmp		=> abs_jmp,
+      addr_in  		=> data_mux_pc,
+      addr_out 		=> addr_pm);
 
   -- instance "prog_mem_1"
   prog_mem_1: prog_mem
     port map (
-      addr_pm  	=> addr_pm,      
+      addr  	=> addr_pm,      
       Instr 	=> Instr);
       
-  -- instance "data_mem_1"
-  data_mem_1: data_mem
+  -- instance "blockram_mem_1"
+  blockram_mem_1: blockram_mem
     port map (
 	  clk      		=> clk,
-	  reset 		=> reset,
-      data_in		=> data_opa,
-      addr_r3x  	=> addr_r3x,
-      w_e 			=> w_e_dm,
+      data_in		=> data_mux_mdec,
+      addr  		=> addr_r3x_mdec,
+      w_e 			=> w_e_memory,
+      en			=> ram_en,
       data_out   	=> data_dm);
   
-  io_reg_portb : io_reg
+  io_mem_1 : io_mem
 	port map (
-	  clk 			=> clk,
-	  reset			=> reset,
-	  w_e			=> w_e_portb,
-	  data_in		=> data_opa,
-	  data_out		=> data_portb_o);
+		clk     	=>  clk,
+		reset		=>  reset,
+		data_in		=>  data_opa,
+		addr		=>  addr_r3x_mdec,           
+		w_e      	=>  w_e_memory, 
+		dsbl		=>  ram_en,          
+        data_pinb	=>  hw_pinb,
+        data_pinc	=>  hw_pinc,
+        data_pind 	=>  hw_pind,
+        data_portb 	=>  data_portb,
+        data_portc 	=>  data_portc,           
+        data_segen 	=>  data_segen,
+        data_segcont=>  data_segcont,        
+        data_out 	=>  data_io);
 	  
-  io_reg_portc : io_reg
-	port map (
-	  clk 			=> clk,
-	  reset			=> reset,
-	  w_e			=> w_e_portc,
-	  data_in		=> data_opa,
-	  data_out		=> data_portc_o);
-	  
-  io_reg_pinb : io_reg
-	port map (
-	  clk 			=> clk,
-	  reset			=> reset,
-	  w_e	        => '1',
-	  data_in		=> hw_pinb,
-	  data_out		=> data_pinb_o);
-	  
-  io_reg_pinc : io_reg
-	port map (
-	  clk 			=> clk,
-	  reset			=> reset,
-	  w_e	        => '1',
-	  data_in		=> hw_pinc,
-	  data_out		=> data_pinc_o);
-
-  io_reg_pind : io_reg
-	port map (
-	  clk 			=> clk,
-	  reset			=> reset,
-	  w_e	        => '1',
-	  data_in		=> "000"&hw_pind,
-	  data_out		=> data_pind_o);
-
-  io_reg_segen : io_reg
-	port map (
-	  clk 			=> clk,
-	  reset			=> reset,
-	  w_e			=> w_e_portc,
-	  data_in		=> data_opa,
-	  data_out		=> data_segen_o);
-	  
-	io_reg_seg0 : io_reg
-	port map (
-	  clk 			=> clk,
-	  reset			=> reset,
-	  w_e			=> w_e_seg0,
-	  data_in		=> data_opa,
-	  data_out		=> data_seg0_o);
-	  
-	io_reg_seg1 : io_reg
-	port map (
-	  clk 			=> clk,
-	  reset			=> reset,
-	  w_e			=> w_e_seg1,
-	  data_in		=> data_opa,
-	  data_out		=> data_seg1_o);
-	  
-	io_reg_seg2 : io_reg
-	port map (
-	  clk 			=> clk,
-	  reset			=> reset,
-	  w_e			=> w_e_seg2,
-	  data_in		=> data_opa,
-	  data_out		=> data_seg2_o);
-	  
-	io_reg_seg3 : io_reg
-	port map (
-	  clk 			=> clk,
-	  reset			=> reset,
-	  w_e			=> w_e_seg3,
-	  data_in		=> data_opa,
-	  data_out		=> data_seg3_o);
-
-
   decoder_mem_1 : decoder_mem
 	port map (
-	  addr_r3x		=> addr_r3x,	  
-	  sel_memory	=> sel_memory,
-	  w_e_dm		=> w_e_dm,
-	  w_e_portb		=> w_e_portb,
-	  w_e_portc		=> w_e_portc,
-	  w_e_memory	=> w_e_memory,
-	  w_e_segen		=> w_e_segen,
-	  w_e_seg0		=> w_e_seg0,
-	  w_e_seg1		=> w_e_seg1,
-	  w_e_seg2		=> w_e_seg2,
-	  w_e_seg3		=> w_e_seg3);
+	  mdec_op		=> mdec_op,
+	  w_e_out		=> w_e_memory,	  
+	  addr_in		=> data_mux_addrio,
+	  addr_out		=> addr_r3x_mdec,
+	  ram_en		=> ram_en,
+	  sel_mdec		=> sel_mdec);
   
   -- instance "decoder_1"
   decoder_1: decoder
     port map (
       Instr         => Instr,
+      mdec_op		=> mdec_op,
       addr_opa      => addr_opa,
       addr_opb      => addr_opb,
       OPCODE        => OPCODE,
-      w_e_regfile   => w_e_regfile,
-      w_e_memory	=> w_e_memory,
+      w_e_regf   	=> w_e_regf,
       mask_sreg     => mask_sreg,
       state_sreg	=> state_sreg,
       rel_pc		=> rel_pc,
-	  sel_im 		=> sel_im,
+      abs_jmp		=> abs_jmp,
+	  --sel_im 		=> sel_im,
 	  sel_ldi		=> sel_ldi,
       sel_alu		=> sel_alu,
-      data_dcd		=> data_dcd);
+      data_dcd		=> data_dcd,
+      sel_opb		=> sel_opb,
+      sel_bconst	=> sel_bconst,
+      sel_maddr		=> sel_maddr);
 
   -- instance "Reg_File_1"
   Reg_File_1: Reg_File
     port map (
       clk           => clk,
       addr_opa      => addr_opa,
-      addr_opb      => addr_opb,
-      w_e_regfile   => w_e_regfile,
+      addr_opb      => addr_opb(4 downto 0),
+      w_e   		=> w_e_regf,
       data_opa      => data_opa,
       data_opb      => data_opb,
       data_ldi  	=> data_mux_ldi,
-      addr_r3x		=> addr_r3x);
+      addr_r3x		=> addr_r3x_regf);
   
   -- instance "ALU_1"
   ALU_1: ALU
     port map (
       OPCODE 		=> OPCODE,
       OPA    		=> data_opa,
-      OPB    		=> data_mux_im,
+      OPB    		=> data_opb_alu,
       RES 			=> data_alu,
       state_alu		=> state_alu);
 
-  -- toplevel logic
-      
-	data_mux_im  <= data_dcd when (sel_im = '1') 	else data_opb; 
-	data_mux_ldi <= data_dcd when (sel_ldi = '1') 	else data_mux_alu;  
-	data_mux_alu <= data_alu when (sel_alu = '1') 	else data_mux_dm;  
-
-	select_memory_output:process(	sel_memory, 
-									data_pinb_o, 
-									data_pinc_o, 
-									data_pind_o, 
-									data_portb_o, 
-									data_portc_o, 
-									data_segen_o, 
-									data_seg0_o, 
-									data_seg1_o, 
-									data_seg2_o, 
-									data_seg3_o, 
-									data_dm)
-	begin
-		case sel_memory is
-			when selcode_mem_pinb =>
-				data_mux_dm <= data_pinb_o;
-			when selcode_mem_pinc =>
-				data_mux_dm <= data_pinc_o;
-			when selcode_mem_pind =>
-				data_mux_dm <= data_pind_o;
-				
-			when selcode_mem_portb =>
-				data_mux_dm <= data_portb_o;
-			when selcode_mem_portc =>
-				data_mux_dm <= data_portc_o;
-				
-			when selcode_mem_segen =>
-				data_mux_dm <= data_segen_o;
-			when selcode_mem_seg0 =>
-				data_mux_dm <= data_seg0_o;
-			when selcode_mem_seg1 =>
-				data_mux_dm <= data_seg1_o;				
-			when selcode_mem_seg2 =>
-				data_mux_dm <= data_seg2_o;
-			when selcode_mem_seg3 =>
-				data_mux_dm <= data_seg3_o;
-				
-			when others => 
-				data_mux_dm <= data_dm;
-		end case;
-	end process;	
+	-- toplevel logic
+    
+    -- push & pop == 1 means rcall
+	data_mux_mdec <= std_logic_vector(addr_pm) when (sel_mdec = '1') else "0"&data_opa;  
+	--data_mux_im  <= data_dcd when (sel_im = '1') else data_opb; 
+	data_mux_ldi <= data_dcd when (sel_ldi = '1') else data_mux_alu;  
+	data_mux_alu <= data_alu when (sel_alu = '1') else data_mux_dm;  
+	data_mux_dm <= data_dm(7 downto 0) when (ram_en = '1') else data_io;	
+	data_mux_pc <= unsigned(rel_pc) when (abs_jmp = '0') else unsigned(data_dm);
+	data_mux_addrio <= addr_r3x_regf when (sel_maddr = '0') else "0000"&addr_opb;
 	
-	hw_portb <= data_portb_o;
-	hw_portc <= data_portc_o;
 	reset <= hw_pind(0) and hw_pind(1) and hw_pind(2) and hw_pind(3) and hw_pind(4);
-	hw_seg_enbl <= data_segen_o(3 downto 0);
 	
-	select_segment_register: process(	data_segen_o, 
-										data_seg0_o,
-										data_seg1_o,
-										data_seg2_o,
-										data_seg3_o)
+	hw_portb<= data_portb;
+	hw_portc<= data_portc;
+	hw_seg_enbl <= data_segen(3 downto 0);
+	hw_seg_cont <= data_segcont;
+	
+	select_opb:process(sel_opb, data_opb, data_dcd)
 	begin
-		case data_segen_o(3 downto 0) is
-			when "0001" =>
-				hw_seg_cont <= data_seg0_o;
-			when "0010" =>
-				hw_seg_cont <= data_seg1_o;
-			when "0100" =>
-				hw_seg_cont <= data_seg2_o;
-			when "1000" =>
-				hw_seg_cont <= data_seg3_o;
-			when others =>
-				hw_seg_cont <= "00000000";
+		case sel_opb is
+			when "000" => data_mux_opb <= data_opb;
+			when "001" => data_mux_opb <= not data_opb;
+			when "010" => data_mux_opb <= data_dcd;
+			when "110" => data_mux_opb <= not data_dcd;
+			when others => data_mux_opb <= (others => '0');
 		end case;
 	end process;
-
-
+	
+	select_bconst:process(sel_bconst, state_sreg(0))
+	begin
+		case sel_bconst is
+			--when "00" => data_mux_bconst <= data_opb;
+			when "01" => data_mux_bconst <= "00000001";
+			when "10" => data_mux_bconst <= (others => '1');
+			when "11" => data_mux_bconst <= "0000000"&state_sreg(0);
+			when others => data_mux_bconst <= (others => '0');
+		end case;
+	end process;
+	
+	set_opb:process(data_mux_bconst, data_mux_opb)
+	begin
+		data_opb_alu <= std_logic_vector(unsigned(data_mux_bconst) + unsigned(data_mux_opb));
+	end process;
+	
+	--select_opb:process()
+	
 	-- purpose: Schreibprozess
 	-- type   : sequential
 	-- inputs : clk, mask_sreg, Status
@@ -470,5 +386,7 @@ begin
 		end if;
 	  end if;
 	end process write_sreg;
+
+	
 
 end Behavioral;
