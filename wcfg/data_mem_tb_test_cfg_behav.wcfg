@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<wave_config>
+   <wave_state>
+   </wave_state>
+   <db_ref_list>
+      <db_ref path="data_mem_tb_test_cfg_behav.wdb" id="1">
+         <top_modules>
+            <top_module name="data_mem_tb" />
+            <top_module name="pkg_processor" />
+         </top_modules>
+      </db_ref>
+   </db_ref_list>
+   <WVObjectSize size="3" />
+   <wave_markers>
+      <marker label="" time="496906200000" />
+   </wave_markers>
+   <wvobject db_ref_id="1" type="logic" fp_name="/data_mem_tb/DUT/freq_div_1/clk_div">
+      <obj_property name="ElementShortName">clk_div</obj_property>
+      <obj_property name="ObjectShortName">clk_div</obj_property>
+   </wvobject>
+   <wvobject db_ref_id="1" type="logic" fp_name="/data_mem_tb/DUT/freq_div_1/clk_reg">
+      <obj_property name="ElementShortName">clk_reg</obj_property>
+      <obj_property name="ObjectShortName">clk_reg</obj_property>
+   </wvobject>
+   <wvobject db_ref_id="1" type="logic" fp_name="/data_mem_tb/DUT/freq_div_1/clk">
+      <obj_property name="ElementShortName">clk</obj_property>
+      <obj_property name="ObjectShortName">clk</obj_property>
+   </wvobject>
+</wave_config>

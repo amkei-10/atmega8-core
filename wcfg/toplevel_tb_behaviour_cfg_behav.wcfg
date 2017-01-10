@@ -1,0 +1,207 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<wave_config>
+   <wave_state>
+   </wave_state>
+   <db_ref_list>
+      <db_ref path="toplevel_tb_behaviour_cfg_behav.wdb" id="1">
+         <top_modules>
+            <top_module name="pkg_instrmem" />
+            <top_module name="pkg_processor" />
+            <top_module name="toplevel_tb" />
+         </top_modules>
+      </db_ref>
+   </db_ref_list>
+   <WVObjectSize size="13" />
+   <wvobject db_ref_id="1" type="logic" fp_name="/toplevel_tb/DUT/reset">
+      <obj_property name="ElementShortName">reset</obj_property>
+      <obj_property name="ObjectShortName">reset</obj_property>
+   </wvobject>
+   <wvobject db_ref_id="1" type="logic" fp_name="/toplevel_tb/DUT/clk">
+      <obj_property name="ElementShortName">clk</obj_property>
+      <obj_property name="ObjectShortName">clk</obj_property>
+   </wvobject>
+   <wvobject db_ref_id="1" type="array" fp_name="/toplevel_tb/DUT/prog_cnt_1/PC_reg">
+      <obj_property name="ElementShortName">PC_reg[8:0]</obj_property>
+      <obj_property name="ObjectShortName">PC_reg[8:0]</obj_property>
+      <obj_property name="Radix">UNSIGNEDDECRADIX</obj_property>
+   </wvobject>
+   <wvobject db_ref_id="1" type="array" fp_name="/toplevel_tb/DUT/Instr">
+      <obj_property name="ElementShortName">Instr[15:0]</obj_property>
+      <obj_property name="ObjectShortName">Instr[15:0]</obj_property>
+      <obj_property name="Radix">BINARYRADIX</obj_property>
+   </wvobject>
+   <wvobject type="group" fp_name="group100">
+      <obj_property name="label">GRP:HWPORT</obj_property>
+      <obj_property name="DisplayName">label</obj_property>
+      <wvobject db_ref_id="1" type="array" fp_name="/toplevel_tb/DUT/hw_portb">
+         <obj_property name="ElementShortName">hw_portb[7:0]</obj_property>
+         <obj_property name="ObjectShortName">hw_portb[7:0]</obj_property>
+      </wvobject>
+      <wvobject db_ref_id="1" type="array" fp_name="/toplevel_tb/DUT/hw_portc">
+         <obj_property name="ElementShortName">hw_portc[7:0]</obj_property>
+         <obj_property name="ObjectShortName">hw_portc[7:0]</obj_property>
+      </wvobject>
+      <wvobject db_ref_id="1" type="array" fp_name="/toplevel_tb/DUT/hw_pinb">
+         <obj_property name="ElementShortName">hw_pinb[7:0]</obj_property>
+         <obj_property name="ObjectShortName">hw_pinb[7:0]</obj_property>
+      </wvobject>
+      <wvobject db_ref_id="1" type="array" fp_name="/toplevel_tb/DUT/hw_pinc">
+         <obj_property name="ElementShortName">hw_pinc[7:0]</obj_property>
+         <obj_property name="ObjectShortName">hw_pinc[7:0]</obj_property>
+      </wvobject>
+      <wvobject db_ref_id="1" type="array" fp_name="/toplevel_tb/DUT/hw_seg_enbl">
+         <obj_property name="ElementShortName">hw_seg_enbl[3:0]</obj_property>
+         <obj_property name="ObjectShortName">hw_seg_enbl[3:0]</obj_property>
+      </wvobject>
+      <wvobject db_ref_id="1" type="array" fp_name="/toplevel_tb/DUT/hw_seg_cont">
+         <obj_property name="ElementShortName">hw_seg_cont[7:0]</obj_property>
+         <obj_property name="ObjectShortName">hw_seg_cont[7:0]</obj_property>
+      </wvobject>
+   </wvobject>
+   <wvobject db_ref_id="1" type="logic" fp_name="/toplevel_tb/DUT/sel_alu">
+      <obj_property name="ElementShortName">sel_alu</obj_property>
+      <obj_property name="ObjectShortName">sel_alu</obj_property>
+   </wvobject>
+   <wvobject db_ref_id="1" type="array" fp_name="/toplevel_tb/DUT/ALU_1/RES">
+      <obj_property name="ElementShortName">RES[7:0]</obj_property>
+      <obj_property name="ObjectShortName">RES[7:0]</obj_property>
+   </wvobject>
+   <wvobject db_ref_id="1" type="array" fp_name="/toplevel_tb/DUT/data_mux_alu">
+      <obj_property name="ElementShortName">data_mux_alu[7:0]</obj_property>
+      <obj_property name="ObjectShortName">data_mux_alu[7:0]</obj_property>
+   </wvobject>
+   <wvobject db_ref_id="1" type="logic" fp_name="/toplevel_tb/DUT/sel_ldi">
+      <obj_property name="ElementShortName">sel_ldi</obj_property>
+      <obj_property name="ObjectShortName">sel_ldi</obj_property>
+   </wvobject>
+   <wvobject db_ref_id="1" type="array" fp_name="/toplevel_tb/DUT/data_mux_ldi">
+      <obj_property name="ElementShortName">data_mux_ldi[7:0]</obj_property>
+      <obj_property name="ObjectShortName">data_mux_ldi[7:0]</obj_property>
+   </wvobject>
+   <wvobject type="group" fp_name="group109">
+      <obj_property name="label">GRP:DATAMEM</obj_property>
+      <obj_property name="DisplayName">label</obj_property>
+      <wvobject db_ref_id="1" type="logic" fp_name="/toplevel_tb/DUT/data_mem_1/w_e">
+         <obj_property name="ElementShortName">w_e</obj_property>
+         <obj_property name="ObjectShortName">w_e</obj_property>
+      </wvobject>
+      <wvobject db_ref_id="1" type="array" fp_name="/toplevel_tb/DUT/data_mem_1/stackpointer">
+         <obj_property name="ElementShortName">stackpointer[9:0]</obj_property>
+         <obj_property name="ObjectShortName">stackpointer[9:0]</obj_property>
+         <obj_property name="Radix">UNSIGNEDDECRADIX</obj_property>
+      </wvobject>
+      <wvobject db_ref_id="1" type="array" fp_name="/toplevel_tb/DUT/data_mem_1/addr_in">
+         <obj_property name="ElementShortName">addr_in[9:0]</obj_property>
+         <obj_property name="ObjectShortName">addr_in[9:0]</obj_property>
+      </wvobject>
+      <wvobject db_ref_id="1" type="array" fp_name="/toplevel_tb/DUT/data_mem_1/data_in">
+         <obj_property name="ElementShortName">data_in[8:0]</obj_property>
+         <obj_property name="ObjectShortName">data_in[8:0]</obj_property>
+      </wvobject>
+      <wvobject db_ref_id="1" type="array" fp_name="/toplevel_tb/DUT/data_mem_1/data_out">
+         <obj_property name="ElementShortName">data_out[8:0]</obj_property>
+         <obj_property name="ObjectShortName">data_out[8:0]</obj_property>
+      </wvobject>
+      <wvobject db_ref_id="1" type="array" fp_name="/toplevel_tb/DUT/data_mem_1/mdec_op">
+         <obj_property name="ElementShortName">mdec_op[2:0]</obj_property>
+         <obj_property name="ObjectShortName">mdec_op[2:0]</obj_property>
+      </wvobject>
+   </wvobject>
+   <wvobject type="group" fp_name="group1437">
+      <obj_property name="label">GRP:BLOCKRAM</obj_property>
+      <obj_property name="DisplayName">label</obj_property>
+      <wvobject db_ref_id="1" type="logic" fp_name="/toplevel_tb/DUT/data_mem_1/blockram_1/w_e">
+         <obj_property name="ElementShortName">w_e</obj_property>
+         <obj_property name="ObjectShortName">w_e</obj_property>
+      </wvobject>
+      <wvobject db_ref_id="1" type="array" fp_name="/toplevel_tb/DUT/data_mem_1/blockram_1/addr">
+         <obj_property name="ElementShortName">addr[9:0]</obj_property>
+         <obj_property name="ObjectShortName">addr[9:0]</obj_property>
+         <obj_property name="Radix">UNSIGNEDDECRADIX</obj_property>
+      </wvobject>
+      <wvobject db_ref_id="1" type="array" fp_name="/toplevel_tb/DUT/data_mem_1/blockram_1/data_in">
+         <obj_property name="ElementShortName">data_in[8:0]</obj_property>
+         <obj_property name="ObjectShortName">data_in[8:0]</obj_property>
+      </wvobject>
+      <wvobject db_ref_id="1" type="array" fp_name="/toplevel_tb/DUT/data_mem_1/blockram_1/data_out">
+         <obj_property name="ElementShortName">data_out[8:0]</obj_property>
+         <obj_property name="ObjectShortName">data_out[8:0]</obj_property>
+      </wvobject>
+      <wvobject db_ref_id="1" type="array" fp_name="/toplevel_tb/DUT/data_mem_1/blockram_1/memory[1023]">
+         <obj_property name="ElementShortName">[1023][8:0]</obj_property>
+         <obj_property name="ObjectShortName">memory[1023][8:0]</obj_property>
+      </wvobject>
+      <wvobject db_ref_id="1" type="array" fp_name="/toplevel_tb/DUT/data_mem_1/blockram_1/memory[1022]">
+         <obj_property name="ElementShortName">[1022][8:0]</obj_property>
+         <obj_property name="ObjectShortName">memory[1022][8:0]</obj_property>
+      </wvobject>
+      <wvobject db_ref_id="1" type="array" fp_name="/toplevel_tb/DUT/data_mem_1/blockram_1/memory[1021]">
+         <obj_property name="ElementShortName">[1021][8:0]</obj_property>
+         <obj_property name="ObjectShortName">memory[1021][8:0]</obj_property>
+      </wvobject>
+      <wvobject db_ref_id="1" type="array" fp_name="/toplevel_tb/DUT/data_mem_1/blockram_1/memory[1020]">
+         <obj_property name="ElementShortName">[1020][8:0]</obj_property>
+         <obj_property name="ObjectShortName">memory[1020][8:0]</obj_property>
+      </wvobject>
+      <wvobject db_ref_id="1" type="array" fp_name="/toplevel_tb/DUT/data_mem_1/blockram_1/memory[1002]">
+         <obj_property name="ElementShortName">[1002][8:0]</obj_property>
+         <obj_property name="ObjectShortName">memory[1002][8:0]</obj_property>
+      </wvobject>
+      <wvobject db_ref_id="1" type="array" fp_name="/toplevel_tb/DUT/data_mem_1/blockram_1/memory[1001]">
+         <obj_property name="ElementShortName">[1001][8:0]</obj_property>
+         <obj_property name="ObjectShortName">memory[1001][8:0]</obj_property>
+      </wvobject>
+      <wvobject db_ref_id="1" type="array" fp_name="/toplevel_tb/DUT/data_mem_1/blockram_1/memory[1000]">
+         <obj_property name="ElementShortName">[1000][8:0]</obj_property>
+         <obj_property name="ObjectShortName">memory[1000][8:0]</obj_property>
+      </wvobject>
+   </wvobject>
+   <wvobject type="group" fp_name="group83">
+      <obj_property name="label">GRP:REGFILE</obj_property>
+      <obj_property name="DisplayName">label</obj_property>
+      <wvobject db_ref_id="1" type="logic" fp_name="/toplevel_tb/DUT/Reg_File_1/w_e">
+         <obj_property name="ElementShortName">w_e</obj_property>
+         <obj_property name="ObjectShortName">w_e</obj_property>
+      </wvobject>
+      <wvobject db_ref_id="1" type="array" fp_name="/toplevel_tb/DUT/Reg_File_1/addr_r3x">
+         <obj_property name="ElementShortName">addr_r3x[9:0]</obj_property>
+         <obj_property name="ObjectShortName">addr_r3x[9:0]</obj_property>
+      </wvobject>
+      <wvobject db_ref_id="1" type="array" fp_name="/toplevel_tb/DUT/Reg_File_1/reg_mem[17]">
+         <obj_property name="ElementShortName">[17][7:0]</obj_property>
+         <obj_property name="ObjectShortName">reg_mem[17][7:0]</obj_property>
+      </wvobject>
+      <wvobject db_ref_id="1" type="array" fp_name="/toplevel_tb/DUT/Reg_File_1/reg_mem[16]">
+         <obj_property name="ElementShortName">[16][7:0]</obj_property>
+         <obj_property name="ObjectShortName">reg_mem[16][7:0]</obj_property>
+      </wvobject>
+      <wvobject db_ref_id="1" type="array" fp_name="/toplevel_tb/DUT/Reg_File_1/reg_mem[15]">
+         <obj_property name="ElementShortName">[15][7:0]</obj_property>
+         <obj_property name="ObjectShortName">reg_mem[15][7:0]</obj_property>
+      </wvobject>
+      <wvobject db_ref_id="1" type="array" fp_name="/toplevel_tb/DUT/Reg_File_1/reg_mem[14]">
+         <obj_property name="ElementShortName">[14][7:0]</obj_property>
+         <obj_property name="ObjectShortName">reg_mem[14][7:0]</obj_property>
+      </wvobject>
+      <wvobject db_ref_id="1" type="array" fp_name="/toplevel_tb/DUT/Reg_File_1/reg_mem[10]">
+         <obj_property name="ElementShortName">[10][7:0]</obj_property>
+         <obj_property name="ObjectShortName">reg_mem[10][7:0]</obj_property>
+      </wvobject>
+      <wvobject db_ref_id="1" type="array" fp_name="/toplevel_tb/DUT/Reg_File_1/reg_mem[9]">
+         <obj_property name="ElementShortName">[9][7:0]</obj_property>
+         <obj_property name="ObjectShortName">reg_mem[9][7:0]</obj_property>
+      </wvobject>
+      <wvobject db_ref_id="1" type="array" fp_name="/toplevel_tb/DUT/Reg_File_1/reg_mem[3]">
+         <obj_property name="ElementShortName">[3][7:0]</obj_property>
+         <obj_property name="ObjectShortName">reg_mem[3][7:0]</obj_property>
+      </wvobject>
+      <wvobject db_ref_id="1" type="array" fp_name="/toplevel_tb/DUT/Reg_File_1/data_opa">
+         <obj_property name="ElementShortName">data_opa[7:0]</obj_property>
+         <obj_property name="ObjectShortName">data_opa[7:0]</obj_property>
+      </wvobject>
+      <wvobject db_ref_id="1" type="array" fp_name="/toplevel_tb/DUT/Reg_File_1/data_ldi">
+         <obj_property name="ElementShortName">data_ldi[7:0]</obj_property>
+         <obj_property name="ObjectShortName">data_ldi[7:0]</obj_property>
+      </wvobject>
+   </wvobject>
+</wave_config>

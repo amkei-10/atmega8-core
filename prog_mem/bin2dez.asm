@@ -37,10 +37,10 @@
 	.equ SPH = 0x3E
 
 ; Fuer Simulation Stack initialisieren --> hoechste Adresse fuer 1kB -10Bit
-ldi R16, 0x03
-out SPH, R16
-ldi R16, 0xFF
-out SPL, R16
+;ldi R16, 0x03
+;out SPH, R16
+;ldi R16, 0xFF
+;out SPL, R16
 
 main: 
 	; Schalter einlesen

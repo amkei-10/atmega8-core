@@ -37,7 +37,7 @@ use work.pkg_instrmem.all;
 
 entity toplevel is
   port (
-		--reset 	: in STD_LOGIC;
+		--reset  		: in STD_LOGIC;
 		clk   		: in STD_LOGIC;
 		
 		hw_seg_enbl	: out std_logic_vector (3 downto 0) := (others => '0');
@@ -46,12 +46,9 @@ entity toplevel is
 		hw_portb	: out std_logic_vector (7 downto 0) := (others => '0');
 		hw_portc	: out std_logic_vector (7 downto 0) := (others => '0');
 		
-		--hw_pinb		: in std_logic_vector (7 downto 0) := (others => '0');
-		--hw_pinc		: in std_logic_vector (7 downto 0) := (others => '0');
-		--hw_pind		: in std_logic_vector (4 downto 0) := (others => '0'));
-		hw_pinb		: in std_logic_vector (7 downto 0) := "00010000";
-		hw_pinc		: in std_logic_vector (7 downto 0) := "00010000";
-		hw_pind		: in std_logic_vector (4 downto 0) := "00010");
+		hw_pinb		: in std_logic_vector (7 downto 0) := (others => '0');
+		hw_pinc		: in std_logic_vector (7 downto 0) := (others => '0');
+		hw_pind		: in std_logic_vector (4 downto 0) := (others => '0'));		
 
 end toplevel;
 
@@ -59,6 +56,8 @@ architecture Behavioral of toplevel is
   -----------------------------------------------------------------------------
   -- Internal signal declarations
   -----------------------------------------------------------------------------
+
+	signal reset		: std_logic; 
 
 	-- outputs of "prog_cnt_1"
   	signal addr_pm 		: unsigned (PMADDR_WIDTH-1 downto 0);
@@ -81,7 +80,7 @@ architecture Behavioral of toplevel is
  	signal 	sel_opb		: bit_vector(2 downto 0);
     signal 	sel_bconst	: bit_vector(1 downto 0);
     signal 	sel_maddr	: bit;
-	signal  mdec_op		: std_logic_vector(3 downto 0);
+	signal  mdec_op		: std_logic_vector(2 downto 0);
 	
 	-- outputs of SREG
  	signal state_sreg 	: std_logic_vector (7 downto 0) := (others => '0');
@@ -95,7 +94,7 @@ architecture Behavioral of toplevel is
  	signal data_mux_ldi	: std_logic_vector (7 downto 0) := (others => '0');
  	signal data_mux_im	: std_logic_vector (7 downto 0) := (others => '0');
  	signal data_mux_alu	: std_logic_vector (7 downto 0) := (others => '0');
- 	signal data_mux_dm	: std_logic_vector (7 downto 0) := (others => '0');
+ 	--signal data_mux_dm	: std_logic_vector (7 downto 0) := (others => '0');
  	signal data_mux_pc	: unsigned (PMADDR_WIDTH-1 downto 0) := (others => '0');
  	signal data_mux_mdec: std_logic_vector (PMADDR_WIDTH-1 downto 0);
 	signal data_mux_opb	: std_logic_vector (7 downto 0) := (others => '0');
@@ -107,22 +106,21 @@ architecture Behavioral of toplevel is
 	signal state_alu 	: std_logic_vector (7 downto 0) := (others => '0');
   
 	--output of decoder_mem
-	signal addr_r3x_mdec: STD_LOGIC_VECTOR (9 downto 0);
-	signal ram_en		: bit;
-	signal sel_mdec		: bit;
-	signal w_e_memory	: bit;
+	--signal addr_r3x_mdec: STD_LOGIC_VECTOR (9 downto 0);
+	--signal ram_en		: bit;
+	--signal sel_mdec		: bit;
+	--signal w_e_memory	: bit;
   
 	-- output of datamemory
 	signal data_dm		: std_logic_vector (PMADDR_WIDTH-1 downto 0);
   
 	--outputs of io_mem
-	signal data_portb	: std_logic_vector (7 downto 0);
-	signal data_portc	: std_logic_vector (7 downto 0);
-	signal data_segen	: std_logic_vector (7 downto 0);
-	signal data_segcont	: std_logic_vector (7 downto 0);
-	signal data_io		: std_logic_vector (7 downto 0);
+	--signal data_portb	: std_logic_vector (7 downto 0);
+	--signal data_portc	: std_logic_vector (7 downto 0);
+	--signal data_segen	: std_logic_vector (7 downto 0);
+	--signal data_segcont	: std_logic_vector (7 downto 0);
+	--signal data_io		: std_logic_vector (7 downto 0);
      
-	signal reset		: std_logic; 
 	signal data_opb_alu	: std_logic_vector (7 downto 0);
   
   -----------------------------------------------------------------------------
@@ -144,45 +142,32 @@ architecture Behavioral of toplevel is
       Instr 		: out STD_LOGIC_VECTOR (15 downto 0));
   end component;
    
-  component blockram_mem
+  component data_mem
     port (
-        clk         : in STD_LOGIC;
-        data_in    	: in STD_LOGIC_VECTOR (PMADDR_WIDTH-1 downto 0);
-        addr    	: in STD_LOGIC_VECTOR (9 downto 0);        
-        w_e			: in bit;
-        en			: in bit;        
-        data_out    : out STD_LOGIC_VECTOR (PMADDR_WIDTH-1 downto 0));
+			clk 	: in STD_LOGIC;
+			mdec_op	: in std_logic_vector(2 downto 0);
+			addr_in : in STD_LOGIC_VECTOR (9 downto 0);
+			data_in	: in STD_LOGIC_VECTOR (PMADDR_WIDTH-1 downto 0);
+			data_out : out STD_LOGIC_VECTOR (PMADDR_WIDTH-1 downto 0);
+			pinb : in STD_LOGIC_VECTOR (7 downto 0);
+			pinc : in STD_LOGIC_VECTOR (7 downto 0);
+			pind : in STD_LOGIC_VECTOR (4 downto 0);           
+			portb : out STD_LOGIC_VECTOR (7 downto 0);
+			portc : out STD_LOGIC_VECTOR (7 downto 0);         
+			segen : out STD_LOGIC_VECTOR (3 downto 0);
+			segcont : out STD_LOGIC_VECTOR (7 downto 0));
   end component;
   
-  component io_mem
-    port(clk      	: in STD_LOGIC;
-		 reset		: in STD_LOGIC;           
-         data_in	: in STD_LOGIC_VECTOR (7 downto 0);
-         addr		: in STD_LOGIC_VECTOR (9 downto 0);           
-         w_e      	: in bit;
-         dsbl		: in bit;
-           
-         data_pinb : in STD_LOGIC_VECTOR (7 downto 0);
-         data_pinc : in STD_LOGIC_VECTOR (7 downto 0);
-         data_pind : in STD_LOGIC_VECTOR (4 downto 0);
-           
-         data_portb : out STD_LOGIC_VECTOR (7 downto 0);
-         data_portc : out STD_LOGIC_VECTOR (7 downto 0);         
-         data_segen : out STD_LOGIC_VECTOR (7 downto 0);
-         data_segcont : out STD_LOGIC_VECTOR (7 downto 0);         
-              
-		 data_out : out STD_LOGIC_VECTOR (7 downto 0));
-  end component;
      
-  component decoder_mem
-    port ( 
-		w_e_out		: out bit;
-		addr_in 	: in STD_LOGIC_VECTOR (9 downto 0);
-		addr_out	: out STD_LOGIC_VECTOR (9 downto 0);
-		ram_en		: out bit;
-		sel_mdec	: out bit;
-		mdec_op	: in std_logic_vector(3 downto 0));
-  end component;
+--component decoder_mem
+--port ( 
+--    w_e_out		: out bit;
+--    addr_in 	: in STD_LOGIC_VECTOR (9 downto 0);
+--    addr_out	: out STD_LOGIC_VECTOR (9 downto 0);
+--    ram_en		: out bit;
+--    sel_mdec	: out bit;
+--    mdec_op	: in std_logic_vector(2 downto 0));
+--  end component;
    
   component decoder
     port (
@@ -202,7 +187,7 @@ architecture Behavioral of toplevel is
       sel_opb		: out bit_vector(2 downto 0);
 	  sel_bconst	: out bit_vector(1 downto 0);
 	  sel_maddr		: out bit;
-	  mdec_op		: out std_logic_vector(3 downto 0));
+	  mdec_op		: out std_logic_vector(2 downto 0));
   end component;
   
   component Reg_File
@@ -247,41 +232,30 @@ begin
       addr  	=> addr_pm,      
       Instr 	=> Instr);
       
-  -- instance "blockram_mem_1"
-  blockram_mem_1: blockram_mem
+  -- instance "datamem_1"
+  data_mem_1: data_mem
     port map (
-	  clk      		=> clk,
-      data_in		=> data_mux_mdec,
-      addr  		=> addr_r3x_mdec,
-      w_e 			=> w_e_memory,
-      en			=> ram_en,
-      data_out   	=> data_dm);
+	  clk      	=> 	clk,
+      addr_in  	=> 	data_mux_addrio,
+      data_in	=> 	data_mux_mdec,
+      data_out  => 	data_dm,
+      mdec_op	=> 	mdec_op,
+      pinb		=>  hw_pinb,
+      pinc		=>  hw_pinc,
+      pind 		=>  hw_pind,
+      portb 	=>  hw_portb,
+      portc 	=>  hw_portc,           
+      segen 	=>  hw_seg_enbl,
+      segcont	=>  hw_seg_cont);
   
-  io_mem_1 : io_mem
-	port map (
-		clk     	=>  clk,
-		reset		=>  reset,
-		data_in		=>  data_opa,
-		addr		=>  addr_r3x_mdec,           
-		w_e      	=>  w_e_memory, 
-		dsbl		=>  ram_en,          
-        data_pinb	=>  hw_pinb,
-        data_pinc	=>  hw_pinc,
-        data_pind 	=>  hw_pind,
-        data_portb 	=>  data_portb,
-        data_portc 	=>  data_portc,           
-        data_segen 	=>  data_segen,
-        data_segcont=>  data_segcont,        
-        data_out 	=>  data_io);
-	  
-  decoder_mem_1 : decoder_mem
-	port map (
-	  mdec_op		=> mdec_op,
-	  w_e_out		=> w_e_memory,	  
-	  addr_in		=> data_mux_addrio,
-	  addr_out		=> addr_r3x_mdec,
-	  ram_en		=> ram_en,
-	  sel_mdec		=> sel_mdec);
+--  decoder_mem_1 : decoder_mem
+--	port map (
+--	  mdec_op		=> mdec_op,
+--	  w_e_out		=> w_e_memory,	  
+--	  addr_in		=> data_mux_addrio,
+--	  addr_out		=> addr_r3x_mdec,
+--	  ram_en		=> ram_en,
+--	  sel_mdec		=> sel_mdec);
   
   -- instance "decoder_1"
   decoder_1: decoder
@@ -328,20 +302,20 @@ begin
 	-- toplevel logic
     
     -- push & pop == 1 means rcall
-	data_mux_mdec <= std_logic_vector(addr_pm) when (sel_mdec = '1') else "0"&data_opa;  
+	data_mux_mdec <= std_logic_vector(addr_pm) when (mdec_op(1 downto 0)  = "11") else "0"&data_opa;  
 	--data_mux_im  <= data_dcd when (sel_im = '1') else data_opb; 
 	data_mux_ldi <= data_dcd when (sel_ldi = '1') else data_mux_alu;  
-	data_mux_alu <= data_alu when (sel_alu = '1') else data_mux_dm;  
-	data_mux_dm <= data_dm(7 downto 0) when (ram_en = '1') else data_io;	
+	data_mux_alu <= data_alu when (sel_alu = '1') else data_dm(7 downto 0);  
+	--data_mux_dm <= data_dm(7 downto 0) when (ram_en = '1') else data_io;	
 	data_mux_pc <= unsigned(rel_pc) when (abs_jmp = '0') else unsigned(data_dm);
 	data_mux_addrio <= addr_r3x_regf when (sel_maddr = '0') else "0000"&addr_opb;
 	
 	reset <= hw_pind(0) and hw_pind(1) and hw_pind(2) and hw_pind(3) and hw_pind(4);
 	
-	hw_portb<= data_portb;
-	hw_portc<= data_portc;
-	hw_seg_enbl <= data_segen(3 downto 0);
-	hw_seg_cont <= data_segcont;
+	--hw_portb<= data_portb;
+	--hw_portc<= data_portc;
+	--hw_seg_enbl <= data_segen(3 downto 0);
+	-- <= data_segcont;
 	
 	select_opb:process(sel_opb, data_opb, data_dcd)
 	begin

@@ -33,35 +33,36 @@ use work.pkg_processor.all;
 --library UNISIM;
 --use UNISIM.VComponents.all;
 
-entity blockram_mem is
+entity blockram is
     port ( clk      : in STD_LOGIC;
            data_in	: in STD_LOGIC_VECTOR (PMADDR_WIDTH-1 downto 0);
            addr 	: in STD_LOGIC_VECTOR (9 downto 0);           
-           w_e      : in bit;
-           en       : in bit;
+           w_e      : in std_logic;
+           en       : in std_logic;
 		   data_out : out STD_LOGIC_VECTOR (PMADDR_WIDTH-1 downto 0));
-end blockram_mem;
+end blockram;
 
-architecture Behavioral of blockram_mem is
-	
+architecture Behavioral of blockram is	
 	type 	memslot is array(1023 downto 0) of std_logic_vector(PMADDR_WIDTH-1 downto 0);
-	signal 	memory:memslot := (others => (others => '0'));
-	
+	signal 	memory:memslot := (others => (others => '0'));	
 begin
-
+	
 	process(clk)
 	begin
 		if clk'event and clk = '1' then
 			if en = '1' then
 				if w_e = '1' then
 					memory(to_integer(unsigned(addr))) <= data_in;
-					data_out <= data_in;
-				else
-					data_out <= memory(to_integer(unsigned(addr)));
+					--data_out <= data_in;
+				--else
+					--data_out <= memory(to_integer(unsigned(addr)));
 				end if;
 			end if;
 		end if;
 	end process;
-
+	
+	--used as distributed RAM (!) -> asynchrone readout
+	--todo: rename or fallback to blockram when using pipelines(!!!)
+	data_out <= memory(to_integer(unsigned(addr)));
 	
 end Behavioral;

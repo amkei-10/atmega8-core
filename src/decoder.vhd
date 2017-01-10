@@ -40,7 +40,7 @@ entity decoder is
 	rel_pc		: out std_logic_vector(PMADDR_WIDTH-1 downto 0) := (others => '0');	-- jump (program_counter)
     abs_jmp		: out bit;        							-- relative/absolute jmp
     --sel_im		: out std_logic := '0';        							-- Mux-Selecteingang für im-data (ALU)
-    mdec_op		: out std_logic_vector(3 downto 0);							-- [3]toggle, [2]w_e, [1]push, [0]pop
+    mdec_op		: out std_logic_vector(2 downto 0);							-- [3]toggle, [2]w_e, [1]push, [0]pop
     sel_ldi 	: out bit;
     sel_alu		: out bit;
     sel_opb		: out bit_vector(2 downto 0);	-- 000: opb, 001:nopb, 010:dcd, 110: ndcd, 011:0
@@ -57,7 +57,7 @@ begin  -- Behavioral
   -- inputs : Instr
   -- outputs: addr_opa, addr_opb, OPCODE, w_e_regf, mask_sreg, ...
   dec_mux: process (Instr, state_sreg)
-	variable mdec_op_tmp : std_logic_vector(3 downto 0) := (others => '0');
+	variable mdec_op_tmp : std_logic_vector(2 downto 0) := (others => '0');
   begin  -- process dec_mux
 
     --prevent latches
@@ -79,7 +79,7 @@ begin  -- Behavioral
     sel_opb <= "000";    
     sel_bconst <= "00";
     
-    mdec_op_tmp(2 downto 0) := (others => '0');
+    mdec_op_tmp := (others => '0');
     
 	-- SREG: [I][T][H][S][V][N][Z][C]
     case Instr(15 downto 10) is    
@@ -137,7 +137,7 @@ begin  -- Behavioral
 		if Instr(3 downto 0) = "0000" then
 			sel_alu <= to_bit(Instr(9));
 			w_e_regf <= not to_bit(Instr(9));
-			mdec_op_tmp(3 downto 2) := not mdec_op_tmp(3) & Instr(9);
+			mdec_op_tmp(2) := Instr(9);
 		end if;
 		
       --branch commandset A
@@ -216,17 +216,18 @@ begin  -- Behavioral
 					abs_jmp <= '1';
 					w_e_regf <= '0';
 					sel_alu <= '0';
-					mdec_op_tmp := not mdec_op_tmp(3) & mdec_op_ret;
+					mdec_op_tmp := mdec_op_ret;
 				end if;
 
 			when others => w_e_regf <= '0';
 		end case;
 		
 	  
-	  --PUSH/POP
+	  --PUSH: 1001 001d dddd 1111
+	  --POP	: 1001 000d dddd 1111
 	  when "100100" =>		  
 		if Instr(3 downto 0) = "1111" then
-			mdec_op_tmp := not mdec_op_tmp(3) & Instr(9) & Instr(9) & not Instr(9);
+			mdec_op_tmp := Instr(9) & Instr(9) & not Instr(9);
 			w_e_regf <= not to_bit(Instr(9));
 			sel_alu <= '0';
 		end if;
@@ -280,7 +281,7 @@ begin  -- Behavioral
           -- RCALL
           when "1101" =>
 			rel_pc <= Instr(8 downto 0);
-			mdec_op_tmp := not mdec_op_tmp(3) & mdec_op_rcall;
+			mdec_op_tmp := mdec_op_rcall;
         
 		  --OUT:1011 1AAr rrrr AAAA : Stores data from register Rr in the Register File to I/O Space
 		  --IN:	1011 0AAd dddd AAAA : Loads data from the I/O Space into register Rd in the Register File.
@@ -291,7 +292,7 @@ begin  -- Behavioral
 			sel_maddr <= '1';
 			sel_alu <= '0';        
 			w_e_regf <= not to_bit(Instr(11));
-			mdec_op_tmp := not mdec_op_tmp(3) & Instr(11) & "00";
+			mdec_op_tmp := Instr(11) & "00";
 		  when others => null;
 		end case;
     end case;
