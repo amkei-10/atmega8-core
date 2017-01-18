@@ -1,0 +1,4 @@
+ 1481  git clone https://github.com/amkei-10/atmega8-core
+ 1953  git add *
+ 1954  git commit -m "fixed redesigned memory"
+ 1955  git push origin master

@@ -24,30 +24,32 @@ use ieee.std_logic_1164.all;
 library work;
 
 entity Freq_Div is
-	generic( div : integer := 100 );
+	generic( div : integer := 1 );
 	port(
-		clk : in std_logic;
-		clk_div : out std_logic
+		clk_in : in std_logic;
+		clk_out : out std_logic
 		);
 end Freq_Div;
 
 architecture Behavioral of Freq_Div is
-	signal clk_reg : std_logic := '0';
+	--signal clk_reg : std_logic := '0';
 begin
-	process(clk)
-		variable counter : integer := 0;
+	process(clk_in)
+		variable counter : integer range 0 to div := 0;
 	begin
-		if clk'event and clk = '1' then
+		if clk_in'event and clk_in = '1' then
+			
+			clk_out <= '0';
+			counter := counter + 1;
+			
 			if counter = div then
+				clk_out <= '1';
 				counter := 0;
-				clk_reg <= '1';
-			else
-				counter := counter + 1;
-				clk_reg <= '0';
 			end if;
+			
 		end if;
 	end process;
 
-	clk_div <= clk_reg;
+	--clk_out <= clk_reg;
 
 end Behavioral;

@@ -22,9 +22,12 @@ package pkg_processor is
 
 	constant op_inc : 		std_logic_vector(4 downto 0) := "01100";	 -- INC
 	constant op_lsr : 		std_logic_vector(4 downto 0) := "01101";	 -- LSR	
-	constant op_ld: 		std_logic_vector(4 downto 0) := "01111";
-	
-	constant op_st: 		std_logic_vector(4 downto 0) := "10000";
+	constant op_ld: 		std_logic_vector(4 downto 0) := "01110";	
+	constant op_st: 		std_logic_vector(4 downto 0) := "01111";
+		
+	constant op_subi: 		std_logic_vector(4 downto 0) := "10000";
+	constant op_ori: 		std_logic_vector(4 downto 0) := "10001";
+	constant op_andi: 		std_logic_vector(4 downto 0) := "10010";
 	
 	
 	-- specific IOMEM-addresses

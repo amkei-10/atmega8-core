@@ -24,24 +24,30 @@ end data_mem;
 
 architecture Behavioral of data_mem is
 
-	signal clk_div : std_logic := '0';
+	signal clk_led : std_logic := '0';
 
 	signal addr_ram : STD_LOGIC_VECTOR (9 downto 0) := (others => '0');
 	signal data_in_ram : STD_LOGIC_VECTOR (PMADDR_WIDTH-1 downto 0) := (others => '0');
 	signal data_out_ram : STD_LOGIC_VECTOR (PMADDR_WIDTH-1 downto 0) := (others => '0');
 	
-	signal segen_reg : STD_LOGIC_VECTOR (3 downto 0) := "0001";
+	signal pinb_reg : STD_LOGIC_VECTOR (7 downto 0) := (others => '0');
+	signal pinc_reg : STD_LOGIC_VECTOR (7 downto 0) := (others => '0');
+	signal pind_reg : STD_LOGIC_VECTOR (4 downto 0) := (others => '0');
+	
+	signal portb_reg : STD_LOGIC_VECTOR (7 downto 0) := (others => '0');
+	signal portc_reg : STD_LOGIC_VECTOR (7 downto 0) := (others => '0');
+	
+	--signal segen_reg : STD_LOGIC_VECTOR (3 downto 0) := "0001";
 	signal seg0_reg : STD_LOGIC_VECTOR (7 downto 0) := (others => '0');
 	signal seg1_reg : STD_LOGIC_VECTOR (7 downto 0) := (others => '0');
 	signal seg2_reg : STD_LOGIC_VECTOR (7 downto 0) := (others => '0');
 	signal seg3_reg : STD_LOGIC_VECTOR (7 downto 0) := (others => '0');
-	signal segcont_reg : STD_LOGIC_VECTOR (7 downto 0) := (others => '0');
+	signal segcont_reg : STD_LOGIC_VECTOR (7 downto 0) := (others => '1');
 	
-	--signal portb_reg : STD_LOGIC_VECTOR (7 downto 0) := (others => '0');
-	--signal portc_reg : STD_LOGIC_VECTOR (7 downto 0) := (others => '0');
+	signal sp_curr : std_logic_vector(9 downto 0) := (others => '1');
+	signal sp_new : std_logic_vector(9 downto 0) := (others => '1');
+	signal sp_op : std_logic_vector(9 downto 0) := (others => '0');
 	
-	signal stackpointer : unsigned(9 downto 0) := (others => '1');
-
 	signal w_e : std_logic;
 
 	component blockram
@@ -55,10 +61,11 @@ architecture Behavioral of data_mem is
 	end component;	
 	
 	component Freq_Div
-	generic( div : integer := 100 );
+	generic( div : integer := 65535 );
+	--generic( div : integer := 10 );
 	port(
-		clk : in std_logic;
-		clk_div : out std_logic);
+		clk_in : in std_logic;
+		clk_out : out std_logic);
 	end component;
 	
 begin
@@ -75,46 +82,44 @@ begin
 
 	freq_div_1: Freq_Div
 	port map(
-		clk		=>	clk,
-		clk_div	=> 	clk_div
+		clk_in		=>	clk,
+		clk_out	=> 	clk_led
 	);
 
 
-	update_stackptr:process(clk)
+	sel_sp_op:process(mdec_op)
 	begin
-		if clk'event and clk = '1' then
-			case mdec_op is 
-				--PUSH/RCALL
-				when mdec_op_rcall | mdec_op_push => 
-					stackpointer <= stackpointer-1;
-								
-				--POP/RET
-				when mdec_op_ret | mdec_op_pop =>
-					--if not (stackpointer = "1111111111") then
-						stackpointer <= stackpointer+1;
-					--end if;
-
-				when others => null;
-			end case; 
-		end if;
+		case mdec_op is 
+			when mdec_op_rcall | mdec_op_push => sp_op <= (others => '1');
+			when mdec_op_ret | mdec_op_pop => sp_op <= "0000000001";
+			when others => sp_op <= (others => '0');
+		end case; 
 	end process;
 	
 	
-	set_addr:process(mdec_op, addr_in,stackpointer)
+	update_sp_curr:process(clk)
+	begin
+		if clk'event and clk = '1' then
+			sp_curr <= sp_new; 
+		end if;
+	end process;
+	
+	sp_new <= std_logic_vector(unsigned(sp_curr) + unsigned(sp_op));
+	
+	
+	set_addr:process(mdec_op, addr_in,sp_curr, sp_new)
 	begin
 		case mdec_op is 
 			--Stack Pointer is post-decremented by 1 after the PUSH/RCALL
-			when mdec_op_rcall | mdec_op_push => 
-				addr_ram <= std_logic_vector(stackpointer);
+			when mdec_op_rcall | mdec_op_push => addr_ram <= sp_curr;
 								
 			--Stack Pointer is pre-incremented by 1 before the POP/RET
 			when mdec_op_ret | mdec_op_pop =>
-				--if not (stackpointer = "1111111111") then
-					addr_ram <= std_logic_vector(stackpointer+1);						
+				--if not (sp_post = "1111111111") then
+					addr_ram <= sp_new;						
 				--else
-					--addr_ram <= std_logic_vector(stackpointer);
-				--end if;
-						
+					--addr_ram <= std_logic_vector(sp_post);
+				--end if;						
 			when others => addr_ram <= addr_in;
 		end case; 
 	end process;
@@ -137,63 +142,50 @@ begin
 		if clk'event and clk = '1' then
 			--if mdec_op(2) = '1' then
 				case addr_in is 
-					when "0000111000" => portb <= data_out_ram(7 downto 0);
-					when "0000110101" => portc <= data_out_ram(7 downto 0);
-					when "0001000000" => segen_reg <= data_out_ram(3 downto 0);
+					when "0000111000" => portb_reg <= data_out_ram(7 downto 0);
+					when "0000110101" => portc_reg <= data_out_ram(7 downto 0);
+					--when "0001000000" => segen_reg <= data_out_ram(3 downto 0);
 					when "0001000001" => seg0_reg <= data_out_ram(7 downto 0);
 					when "0001000010" => seg1_reg <= data_out_ram(7 downto 0);
 					when "0001000011" => seg2_reg <= data_out_ram(7 downto 0);
 					when "0001000100" => seg3_reg <= data_out_ram(7 downto 0);
 					when others => null;
 				end case;
-			
-				case segen_reg is
-					when "0001" => segcont_reg <= seg0_reg;
-					when "0010" => segcont_reg <= seg1_reg;
-					when "0100" => segcont_reg <= seg2_reg;
-					when "1000" => segcont_reg <= seg3_reg;
-					when others => segcont_reg <= (others => '0');
-				end case;
-			
 			--end if;
 		end if;	
 	end process;
 	
 	data_out <= data_out_ram;
 	
-	--portb <= portb_reg;
-	--portc <= portc_reg;
-	segen <= not segen_reg;
-    segcont <= not segcont_reg;
+	portb <= portb_reg;
+	portc <= portc_reg;
+	
+	--pinb_reg <= pinb;
+	--pinc_reg <= pinc;
+	--pind_reg <= pind;
+	
+	--segen <= not segen_reg;
+    --segcont <= not segcont_reg;
 
---	set_segs:process(clk)
---		variable segen_local : std_logic_vector(3 downto 0) := "0001";
---	begin
---		if clk'event and clk = '1' then
---			if clk_div = '1' then
-			
---				for i in 3 downto 1 loop
---					segen_local(i) := segen_local(i-1);
---				end loop;
-				
---				segen_local(0) := '0';
-			
---				if segen_local = "0000" then
---					segen_local := "0001";
---				end if;
-				
---				case segen_local is
---					when "0001" => segcont_reg <= seg0_reg;
---					when "0010" => segcont_reg <= seg1_reg;
---					when "0100" => segcont_reg <= seg2_reg;
---					when "1000" => segcont_reg <= seg3_reg;
---					when others => segcont_reg <= (others => '0');
---				end case;
+	set_segs:process(clk, clk_led)
+		variable segen_local : bit_vector(3 downto 0) := "0001";
+		variable segcont_local : std_logic_vector(7 downto 0) := (others=>'1');
+	begin
+		if clk'event and clk = '1' and clk_led = '1' then				
+				case segen_local is
+					when "0001" => 	segcont_local := seg0_reg;
+					when "0010" => 	segcont_local := seg1_reg;
+					when "0100" => 	segcont_local := seg2_reg;
+					when "1000" => 	segcont_local := seg3_reg;
+					when others => 	null;
+				end case;
 					
---				segen <= not segen_local;
---				segcont <= not segcont_reg;
---			end if;
---		end if;
---	end process;
+				segen <= not to_stdlogicvector(segen_local);
+				segcont <= not segcont_local;
+				
+				--shift left arithmetic
+				segen_local := segen_local rol 1;
+		end if;
+	end process;
 	
 end Behavioral;

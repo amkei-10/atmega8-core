@@ -35,16 +35,12 @@ entity decoder is
     data_dcd  	: out std_logic_vector(7 downto 0) 	:= (others => '0'); -- Immediate Value
     OPCODE      : out std_logic_vector(4 downto 0) 	:= (others => '0'); -- Opcode für ALU
     w_e_regf 	: out bit;    											-- write enable for Registerfile
-    --w_e_mem		: out bit;    											-- write enable for Datamemory
     mask_sreg   : out std_logic_vector(7 downto 0) 	:= (others => '0'); -- SREG bitmask for write_enables
 	rel_pc		: out std_logic_vector(PMADDR_WIDTH-1 downto 0) := (others => '0');	-- jump (program_counter)
-    abs_jmp		: out bit;        							-- relative/absolute jmp
-    --sel_im		: out std_logic := '0';        							-- Mux-Selecteingang für im-data (ALU)
-    mdec_op		: out std_logic_vector(2 downto 0);							-- [3]toggle, [2]w_e, [1]push, [0]pop
+    abs_jmp		: out bit;        											-- relative/absolute jmp
+    mdec_op		: out std_logic_vector(2 downto 0);							-- [2]w_e, [1]push, [0]pop
     sel_ldi 	: out bit;
     sel_alu		: out bit;
-    sel_opb		: out bit_vector(2 downto 0);	-- 000: opb, 001:nopb, 010:dcd, 110: ndcd, 011:0
-    sel_bconst	: out bit_vector(1 downto 0);	-- 00: 0, 	 01:1, 	   10:-1,   11:carry
     sel_maddr	: out bit
     );
 end decoder;
@@ -75,10 +71,6 @@ begin  -- Behavioral
     sel_alu <= '1';
     w_e_regf <= '0';
     
-    --sel_im <= '0';
-    sel_opb <= "000";    
-    sel_bconst <= "00";
-    
     mdec_op_tmp := (others => '0');
     
 	-- SREG: [I][T][H][S][V][N][Z][C]
@@ -96,8 +88,6 @@ begin  -- Behavioral
         OPCODE <= op_sub;
         w_e_regf <= '1';
         mask_sreg <= "00111111";
-        sel_opb <= "001";
-        sel_bconst <= "01";
       
       -- CP: This instruction performs a compare between two registers Rd and Rr. None of the registers are changed.
       when "000101" =>
@@ -110,7 +100,6 @@ begin  -- Behavioral
         OPCODE <= op_adc;
         w_e_regf <= '1';
         mask_sreg <= "00111111";
-        sel_bconst <= "11";
       
       -- AND: Performs the logical AND between register Rd and register Rr, and places the result in the destination register Rd.
 	  when "001000" =>
@@ -195,15 +184,11 @@ begin  -- Behavioral
 			when "01010" =>
 			  OPCODE <= op_dec;
 			  mask_sreg <= "00011110";
-			  sel_opb <= "011";
-			  sel_bconst <= "10";
 			  
 			-- INC
 			when "00011" =>
 			  OPCODE <= op_inc;
 			  mask_sreg <= "00011110";
-			  sel_opb <= "011";
-			  sel_bconst <= "01";
 			  
 			-- LSR
 			when "00110" =>
@@ -236,7 +221,6 @@ begin  -- Behavioral
       -- immediate + rel commands + in/out
       when others =>
         --sel_im <= '1';
-        sel_opb <= "010";
         addr_opa <= '1' & Instr(7 downto 4);    
         
         case Instr(15 downto 12) is 
@@ -249,28 +233,24 @@ begin  -- Behavioral
             
           -- CPI
           when "0011" =>
-            OPCODE <= op_sub;
+            OPCODE <= op_subi;
             mask_sreg <= "00111111";
-            sel_opb <= "110";
-            sel_bconst <= "01";
             
           -- SUBI
           when "0101" =>
-            OPCODE <= op_sub;
+            OPCODE <= op_subi;
             mask_sreg <= "00111111";
             w_e_regf <= '1';
-            sel_opb <= "110";
-            sel_bconst <= "01";
                         
           -- ORI
           when "0110" =>
-			OPCODE <= op_or;
+			OPCODE <= op_ori;
 			mask_sreg <= "00011110";
             w_e_regf <= '1';
             			
           -- ANDI
           when "0111" =>
-            OPCODE <= op_and;
+            OPCODE <= op_andi;
             mask_sreg <= "00011110";
             w_e_regf <= '1';
                       
