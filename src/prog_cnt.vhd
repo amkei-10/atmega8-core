@@ -34,12 +34,12 @@ entity prog_cnt is
   port (
     clk   		: in  std_logic := '0';
     reset 		: in  std_logic := '0';
-    abs_jmp		: in  bit;
-    addr_in		: in  unsigned (PMADDR_WIDTH-1 downto 0) := (others => '0');
+    jmp_code	: in  std_logic_vector(1 downto 0):= (others => '0');
+    addr_op		: in  unsigned (PMADDR_WIDTH-1 downto 0) := (others => '0');
     addr_out  	: out unsigned (PMADDR_WIDTH-1 downto 0) := (others => '0'));
 end prog_cnt;
 
--- Rudimentaerer Programmzaehler ohne Ruecksetzen und springen...
+-- Programmzaehler mit Ruecksetzen und springen
 
 architecture Behavioral of prog_cnt is
   signal PC_reg : unsigned(PMADDR_WIDTH-1 downto 0);
@@ -49,10 +49,10 @@ begin
     if clk'event and clk = '1' then     -- rising clock edge
       if reset = '1' then               -- synchronous reset (active high)
         PC_reg <= (others => '0');        
-      elsif abs_jmp = '1' then
-		PC_reg <= unsigned(addr_in+1);
+      elsif jmp_code = jmp_code_abs then
+		PC_reg <= unsigned(addr_op + 1);
 	  else
-        PC_reg <= unsigned(PC_reg + ( addr_in(PMADDR_WIDTH-2) & addr_in(PMADDR_WIDTH-2 downto 0) + 1));
+        PC_reg <= unsigned(PC_reg + addr_op);
       end if;
     end if;
   end process count;

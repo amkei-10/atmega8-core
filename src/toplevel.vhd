@@ -65,6 +65,12 @@ architecture Behavioral of toplevel is
 	-- outputs of "prog_mem_1"
 	signal Instr 		: STD_LOGIC_VECTOR (15 downto 0);
 
+	-- outputs of instr_fetch
+    signal Instr_if_out	: STD_LOGIC_VECTOR (15 downto 0):= (others => '0');
+    signal addr_if_out	: unsigned (PMADDR_WIDTH-1 downto 0);
+
+	signal Instr_mux_if : STD_LOGIC_VECTOR (15 downto 0):= (others => '0');
+
 	-- outputs of "decoder_1"
  	signal 	addr_opa    : std_logic_vector(4 downto 0);
  	signal 	addr_opb    : std_logic_vector(5 downto 0);
@@ -72,7 +78,7 @@ architecture Behavioral of toplevel is
  	signal 	OPCODE      : std_logic_vector(4 downto 0);
  	signal 	mask_sreg   : std_logic_vector(7 downto 0);
  	signal 	rel_pc		: std_logic_vector(PMADDR_WIDTH-1 downto 0);
- 	signal	abs_jmp		: bit;
+ 	signal	jmp_code	: std_logic_vector(1 downto 0);
  	signal 	w_e_regf 	: bit;
  	signal 	sel_ldi		: bit;
  	signal 	sel_alu		: bit;
@@ -92,17 +98,17 @@ architecture Behavioral of toplevel is
  	signal data_mux_im	: std_logic_vector (7 downto 0) := (others => '0');
  	signal data_mux_alu	: std_logic_vector (7 downto 0) := (others => '0');
  	signal data_mux_pc	: unsigned (PMADDR_WIDTH-1 downto 0) := (others => '0');
- 	signal data_mux_mdec: std_logic_vector (PMADDR_WIDTH-1 downto 0);
+ 	signal data_mux_dmin: std_logic_vector (PMADDR_WIDTH-1 downto 0);
 	signal data_mux_opb	: std_logic_vector (7 downto 0) := (others => '0');
 	signal data_mux_bconst	: std_logic_vector (7 downto 0) := (others => '0');
-	signal data_mux_addrio  : std_logic_vector (9 downto 0) := (others => '0');
+	signal addr_mux_dm  : std_logic_vector (9 downto 0) := (others => '0');
 	
 	-- output of ALU
 	signal data_alu 	: std_logic_vector (7 downto 0) := (others => '0');
 	signal state_alu 	: std_logic_vector (7 downto 0) := (others => '0');
   
 	-- output of datamemory
-	signal data_dm		: std_logic_vector (PMADDR_WIDTH-1 downto 0);
+	signal data_dmout		: std_logic_vector (PMADDR_WIDTH-1 downto 0);
   
 	signal data_opb_alu	: std_logic_vector (7 downto 0);
   
@@ -114,8 +120,8 @@ architecture Behavioral of toplevel is
     port (
       clk   		: in  STD_LOGIC;
       reset 		: in  STD_LOGIC;
-      abs_jmp 		: in  bit;
-      addr_in		: in unsigned(PMADDR_WIDTH-1 downto 0);      
+      jmp_code		: in  std_logic_vector(1 downto 0):= (others => '0');
+      addr_op		: in unsigned(PMADDR_WIDTH-1 downto 0);      
       addr_out 		: out unsigned (PMADDR_WIDTH-1 downto 0));
   end component;
 
@@ -124,6 +130,15 @@ architecture Behavioral of toplevel is
       addr  		: in  unsigned (PMADDR_WIDTH-1 downto 0);
       Instr 		: out STD_LOGIC_VECTOR (15 downto 0));
   end component;   
+   
+  component instr_fetch
+    port (
+		clk   		: in  std_logic := '0';
+		instr_in 	: in  STD_LOGIC_VECTOR (15 downto 0):= (others => '0');
+		instr_out	: out STD_LOGIC_VECTOR (15 downto 0):= (others => '0');
+		addr_in		: in unsigned (PMADDR_WIDTH-1 downto 0);
+		addr_out	: out unsigned (PMADDR_WIDTH-1 downto 0));
+  end component;    
    
   component data_mem
     port (
@@ -151,7 +166,7 @@ architecture Behavioral of toplevel is
       w_e_regf   	: out bit;
       mask_sreg     : out std_logic_vector(7 downto 0);
       rel_pc		: out std_logic_vector(PMADDR_WIDTH-1 downto 0);
-      abs_jmp		: out bit;
+      jmp_code		: out std_logic_vector(1 downto 0);
       sel_ldi		: out bit;
       sel_alu 		: out bit;
       data_dcd		: out std_logic_vector(7 downto 0);
@@ -177,6 +192,7 @@ architecture Behavioral of toplevel is
       OPA 			: in STD_LOGIC_VECTOR (7 downto 0) 	:= (others => '0');
       OPB 			: in STD_LOGIC_VECTOR (7 downto 0) 	:= (others => '0');
       OPIM			: in STD_LOGIC_VECTOR (7 downto 0) 	:= (others => '0');
+      CARRY			: in STD_LOGIC := '0';
       RES 			: out STD_LOGIC_VECTOR (7 downto 0) := (others => '0');
       state_alu		: out STD_LOGIC_VECTOR (7 downto 0)	:= (others => '0'));
   end component;
@@ -192,8 +208,8 @@ begin
     port map (
       clk   		=> clk,
       reset 		=> reset,
-      abs_jmp		=> abs_jmp,
-      addr_in  		=> data_mux_pc,
+      jmp_code		=> jmp_code,
+      addr_op  		=> data_mux_pc,
       addr_out 		=> addr_pm);
 
   -- instance "prog_mem_1"
@@ -202,13 +218,21 @@ begin
       addr  	=> addr_pm,      
       Instr 	=> Instr);
       
+  instr_fetch_1 : instr_fetch
+	port map (
+	  clk		=> clk,
+	  addr_in	=> addr_pm,
+	  addr_out	=> addr_if_out,
+	  instr_in	=> Instr_mux_if,
+	  instr_out	=> Instr_if_out);
+      
   -- instance "datamem_1"
   data_mem_1: data_mem
     port map (
 	  clk      	=> 	clk,
-      addr_in  	=> 	data_mux_addrio,
-      data_in	=> 	data_mux_mdec,
-      data_out  => 	data_dm,
+      addr_in  	=> 	addr_mux_dm,
+      data_in	=> 	data_mux_dmin,
+      data_out  => 	data_dmout,
       mdec_op	=> 	mdec_op,
       pinb		=>  hw_pinb,
       pinc		=>  hw_pinc,
@@ -221,7 +245,7 @@ begin
   -- instance "decoder_1"
   decoder_1: decoder
     port map (
-      Instr         => Instr,
+      Instr         => Instr_if_out,
       mdec_op		=> mdec_op,
       addr_opa      => addr_opa,
       addr_opb      => addr_opb,
@@ -230,7 +254,7 @@ begin
       mask_sreg     => mask_sreg,
       state_sreg	=> state_sreg,
       rel_pc		=> rel_pc,
-      abs_jmp		=> abs_jmp,
+      jmp_code		=> jmp_code,
 	  sel_ldi		=> sel_ldi,
       sel_alu		=> sel_alu,
       data_dcd		=> data_dcd,
@@ -255,18 +279,36 @@ begin
       OPA    		=> data_opa,
       OPB    		=> data_opb,
       OPIM			=> data_dcd,
+      CARRY			=> state_sreg(0),
       RES 			=> data_alu,
       state_alu		=> state_alu);
 
 	-- toplevel logic
     
     -- push & pop == 1 means rcall
-	data_mux_mdec <= std_logic_vector(addr_pm) when (mdec_op(1 downto 0)  = "11") else "0"&data_opa;  
+	data_mux_dmin <= std_logic_vector(addr_if_out) when (mdec_op(1 downto 0)  = "11") else "0"&data_opa;  
+	addr_mux_dm <= addr_r3x_regf when (sel_maddr = '0') else "0000"&addr_opb;	
+	
 	data_mux_ldi <= data_dcd when (sel_ldi = '1') else data_mux_alu;  
-	data_mux_alu <= data_alu when (sel_alu = '1') else data_dm(7 downto 0);  
-	data_mux_pc <= unsigned(rel_pc) when (abs_jmp = '0') else unsigned(data_dm);
-	data_mux_addrio <= addr_r3x_regf when (sel_maddr = '0') else "0000"&addr_opb;	
-
+	data_mux_alu <= data_alu when (sel_alu = '1') else data_dmout(7 downto 0);  
+	
+	set_pc_offset:process(jmp_code, rel_pc, data_dmout)
+	begin
+		case jmp_code is 
+			when jmp_code_inc => data_mux_pc <= "000000001";
+			when jmp_code_rel => data_mux_pc <= unsigned(rel_pc(PMADDR_WIDTH-2) & rel_pc(PMADDR_WIDTH-2 downto 0));
+			when jmp_code_abs => data_mux_pc <= unsigned(data_dmout);
+			when others => data_mux_pc <= (others => '0');
+		end case;
+	end process;
+	
+	
+	
+	--bypass_instrcode:process(jmp_code, Instr, Instr_if_out)
+	Instr_mux_if <= Instr when (jmp_code = jmp_code_inc) else (others => '0');
+	
+	
+	
 	reset <= hw_pind(0) and hw_pind(1) and hw_pind(2) and hw_pind(3) and hw_pind(4);	
 	
 	-- purpose: Schreibprozess

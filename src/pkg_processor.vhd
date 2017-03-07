@@ -50,4 +50,9 @@ package pkg_processor is
 	constant mdec_op_ret : std_logic_vector(2 downto 0) := "011";
 	constant mdec_op_pop : std_logic_vector(2 downto 0) := "001";
 	
+	constant jmp_code_inv : std_logic_vector(1 downto 0) := "00";
+	constant jmp_code_inc : std_logic_vector(1 downto 0) := "01";
+	constant jmp_code_rel : std_logic_vector(1 downto 0) := "10";
+	constant jmp_code_abs : std_logic_vector(1 downto 0) := "11";
+	
 end pkg_processor;

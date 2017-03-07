@@ -31,6 +31,7 @@ entity ALU is
            OPA 			: in STD_LOGIC_VECTOR (7 downto 0) 	:= (others => '0');
            OPB 			: in STD_LOGIC_VECTOR (7 downto 0) 	:= (others => '0');
            OPIM			: in STD_LOGIC_VECTOR (7 downto 0) 	:= (others => '0');
+           CARRY		: in STD_LOGIC := '0';
            RES 			: out STD_LOGIC_VECTOR (7 downto 0) := (others => '0');
            state_alu	: out STD_LOGIC_VECTOR (7 downto 0)	:= (others => '0'));
 end ALU;
@@ -66,7 +67,7 @@ begin
 	end process;
 
 
-	select_bconst:process(OPCODE, c)
+	select_bconst:process(OPCODE, CARRY)
 	begin
 		case OPCODE is
 			when op_sub | op_inc | op_subi => 	
@@ -74,7 +75,7 @@ begin
 			when op_dec => 						
 				bconst <= (others => '1');
 			when op_adc	=>						
-				bconst <= "0000000"&c;
+				bconst <= "0000000"&CARRY;
 			when others => 						
 				bconst <= (others => '0');
 		end case;
@@ -126,20 +127,20 @@ begin
   -- type   : combinational
   -- inputs : OPA, OPB_REG, OPCODE, erg
   -- outputs: z, c, v, n
-  Berechnung_SREG: process (OPA, OPB_REG, OPCODE, erg, n, c)	
+  Berechnung_SREG: process (OPA, OPB, OPB_REG, OPCODE, erg, n, c)	
   begin  -- process Berechnung_SREG
     z<=not (erg(7) or erg(6) or erg(5) or erg(4) or erg(3) or erg(2) or erg(1) or erg(0));
 
 	-- Default-Setting for : AND, ANDI, OR, ORI ...
     n <= erg(7);
-    c <= '0';                           -- um Latches zu verhindern
+    c <= '0';
     v <= '0';
     
     case OPCODE is
       -- ADD, ADC
       when op_add | op_adc =>
-		c<=(OPA(7) AND OPB_REG(7)) OR (OPB_REG(7) AND not erg(7)) OR (not erg(7) AND OPA(7));
-		v<=(OPA(7) AND OPB_REG(7) AND (not erg(7))) OR ((not OPA(7)) and (not OPB_REG(7)) and  erg(7));
+		c<=(OPA(7) and OPB(7)) or (OPB(7) and not erg(7)) or (not erg(7) and OPA(7));
+		v<=(OPA(7) and OPB(7) and (not erg(7))) or ((not OPA(7)) and (not OPB(7)) and  erg(7));
       
       -- INC
 	  when op_inc =>
@@ -147,8 +148,8 @@ begin
 		  
       -- SUB, SUBI, CP, CPI
       when op_sub | op_subi =>
-		c<=(not OPA(7) and OPB_REG(7)) or (OPB_REG(7) and erg(7)) or (erg(7) and not OPA(7));
-		v<=(OPA(7) and not OPB_REG(7) and not erg(7)) or (not OPA(7) and OPB_REG(7) and erg(7));		
+		c<=(not OPA(7) and OPB(7)) or (OPB(7) and erg(7)) or (erg(7) and not OPA(7));
+		v<=(OPA(7) and not OPB(7) and not erg(7)) or (not OPA(7) and OPB(7) and erg(7));
 	  
 	  -- COM
 	  when op_com =>

@@ -37,7 +37,7 @@ entity decoder is
     w_e_regf 	: out bit;    											-- write enable for Registerfile
     mask_sreg   : out std_logic_vector(7 downto 0) 	:= (others => '0'); -- SREG bitmask for write_enables
 	rel_pc		: out std_logic_vector(PMADDR_WIDTH-1 downto 0) := (others => '0');	-- jump (program_counter)
-    abs_jmp		: out bit;        											-- relative/absolute jmp
+    jmp_code	: out std_logic_vector(1 downto 0);							-- "00":not used "01":inc "10":rel "11":abs
     mdec_op		: out std_logic_vector(2 downto 0);							-- [2]w_e, [1]push, [0]pop
     sel_ldi 	: out bit;
     sel_alu		: out bit;
@@ -61,12 +61,12 @@ begin  -- Behavioral
     mask_sreg <= (others => '0');
     
 	rel_pc <= (others => '0');
+	jmp_code <= jmp_code_inc;
 	addr_opa <= Instr(8 downto 4);
     addr_opb <= "0"&Instr(9) & Instr (3 downto 0);
     sel_maddr <= '0';
     
     --control pins
-    abs_jmp <= '0';
     sel_ldi <= '0';
     sel_alu <= '1';
     w_e_regf <= '0';
@@ -136,11 +136,13 @@ begin  -- Behavioral
 			when "000" => 
 				if state_sreg(0) = '0' then
 					rel_pc <= Instr(9)&Instr(9)&Instr(9 downto 3);
+					jmp_code <= jmp_code_rel;
 				end if;				
 			-- brne ( Branch if Not Equal)
 			when "001" => 
 				if state_sreg(1) = '0' then
 					rel_pc <= Instr(9)&Instr(9)&Instr(9 downto 3);
+					jmp_code <= jmp_code_rel;
 				end if;				
 			when others => null;		
 		end case;
@@ -153,12 +155,14 @@ begin  -- Behavioral
 			when "001" => 
 				if state_sreg(1) = '1' then
 					rel_pc <= Instr(9)&Instr(9)&Instr(9 downto 3);
+					jmp_code <= jmp_code_rel;
 				end if;
 			
 			-- brcs ( branch if carry set )	
 			when "000" => 
 				if state_sreg(0) = '1' then
 					rel_pc <= Instr(9)&Instr(9)&Instr(9 downto 3);
+					jmp_code <= jmp_code_rel;
 				end if;
 			
 			when others => null;
@@ -198,10 +202,10 @@ begin  -- Behavioral
 			-- RET
 			when "01000" =>
 				if Instr(8 downto 4) = "10000" then
-					abs_jmp <= '1';
 					w_e_regf <= '0';
 					sel_alu <= '0';
 					mdec_op_tmp := mdec_op_ret;
+					jmp_code <= jmp_code_abs;
 				end if;
 
 			when others => w_e_regf <= '0';
@@ -256,12 +260,15 @@ begin  -- Behavioral
                       
           -- RJMP
           when "1100" =>  
-			rel_pc <= Instr(8 downto 0);			
+			rel_pc <= Instr(8 downto 0);
+            jmp_code <= jmp_code_rel;
             
           -- RCALL
           when "1101" =>
 			rel_pc <= Instr(8 downto 0);
 			mdec_op_tmp := mdec_op_rcall;
+			--jmp_code <= jmp_code_abs;
+			jmp_code <= jmp_code_rel;
         
 		  --OUT:1011 1AAr rrrr AAAA : Stores data from register Rr in the Register File to I/O Space
 		  --IN:	1011 0AAd dddd AAAA : Loads data from the I/O Space into register Rd in the Register File.

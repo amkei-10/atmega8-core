@@ -159,8 +159,8 @@ delay:
 	eor R18,R18
 	loop_delay0:
 	
-	eor R19,R19
-	loop_delay1:	
+	;eor R19,R19
+	;loop_delay1:	
 	
 	eor R20,R20
 	;ldi R20, 0x03		;48Hz -> 50MHz/(4*(255*255*4))
@@ -168,8 +168,8 @@ delay:
 	dec R20
 	brne loop_delay2
 		
-	dec R19
-	brne loop_delay1
+	;dec R19
+	;brne loop_delay1
 	
 	dec R18
 	brne loop_delay0	
