@@ -27,12 +27,13 @@ use IEEE.NUMERIC_STD.ALL;
 entity Reg_File is
     Port ( clk			: in STD_LOGIC := '0';
            w_e 			: in bit;
+           --addr_opa_w 	: in STD_LOGIC_VECTOR (4 downto 0) := "00000";
            addr_opa 	: in STD_LOGIC_VECTOR (4 downto 0) := "00000";
            addr_opb 	: in STD_LOGIC_VECTOR (4 downto 0) := "00000";
-           data_ldi		: in STD_LOGIC_VECTOR (7 downto 0) := x"00";
+           data_opim	: in STD_LOGIC_VECTOR (7 downto 0) := x"00";
            data_opa 	: out STD_LOGIC_VECTOR (7 downto 0) := x"00";
            data_opb 	: out STD_LOGIC_VECTOR (7 downto 0) := x"00";
-           addr_r3x		: out STD_LOGIC_VECTOR (9 downto 0) := "0000000000");
+           addr_Z		: out STD_LOGIC_VECTOR (9 downto 0) := "0000000000");
 end Reg_File;
 
 -- ACHTUNG!!! So einfach wird das mit dem Registerfile am Ende nicht.
@@ -41,10 +42,13 @@ end Reg_File;
 
 architecture Behavioral of Reg_File is
   type regs is array(31 downto 0) of std_logic_vector(7 downto 0); 
-  signal reg_mem:regs := (others => (others => '0'));  
+  signal reg_mem:regs := (others => (others => '0'));
+  
+  signal addr_write_IE : std_logic_vector (4 downto 0);
+  signal addr_write_WB : std_logic_vector (4 downto 0);
 begin
   
-  -- purpose: einfacher Schreibprozess für rudimentaeres Registerfile
+  -- purpose: Schreibprozess für Registerfile
   -- type   : sequential
   -- inputs : clk, addr_opa, w_e, data_res
   -- outputs: reg_mem
@@ -52,8 +56,11 @@ begin
   begin  -- process registerfile
     if clk'event and clk = '1' then  -- rising clock edge
       if w_e = '1' then
-        reg_mem(to_integer(unsigned(addr_opa))) <= data_ldi;
+        --reg_mem(to_integer(unsigned(addr_opa_w))) <= data_opim;
+        reg_mem(to_integer(unsigned(addr_write_WB))) <= data_opim;
       end if;
+      addr_write_IE <= addr_opa;
+      addr_write_WB <= addr_write_IE;
     end if;
   end process registerfile;
 
@@ -61,7 +68,7 @@ begin
   data_opa <= reg_mem(to_integer(unsigned(addr_opa)));
   data_opb <= reg_mem(to_integer(unsigned(addr_opb)));
   
-  --addr_r3x <= reg_mem(to_integer(unsigned(addr_opa)+1))(1 downto 0) & reg_mem(to_integer(unsigned(addr_opa)));
-  addr_r3x <= reg_mem(31)(1 downto 0) & reg_mem(30);
+  --addr_Z <= reg_mem(to_integer(unsigned(addr_opa)+1))(1 downto 0) & reg_mem(to_integer(unsigned(addr_opa)));
+  addr_Z <= reg_mem(31)(1 downto 0) & reg_mem(30);
   
 end Behavioral;

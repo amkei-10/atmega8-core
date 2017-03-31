@@ -16,74 +16,79 @@
 	.def ZL = R30
 	.def ZH = R31
 
+	nop
+	nop
+	nop
+	nop
+	
 	;initialwert für segen
-	ldi R22, 0b00000100
+	ldi R22, 0b00000100		;#4
 main:
-	eor ZH,ZH
+	eor ZH,ZH			;#5		Z=0x0000
 	;GPIOs einlesen
-	ldi	ZL, SWH		;pinc
-	ld R11,Z
-	ldi	ZL, SWL		;pinb
-	ld R10,Z
+	ldi	ZL, SWH			;#6		Z=0x0033
+	ld R11,Z			;#7		R11<-pinc
+	ldi	ZL, SWL			;#8		Z=0x0036
+	ld R10,Z			;#9		R10<-pinb
 
 	
+	rcall delay			;#10
 	
 	;GPIOs auf LEDs ausgeben
-	ldi ZL, LEDH	;portc
-	st Z,R11
+	ldi ZL, LEDH			;#11;portc	
+	st Z,R11			;#12
 	
-	rcall delay
 	
-	ldi ZL, LEDL	;portb
-	st Z,R10
+	ldi ZL, LEDL			;#13;portb
+	st Z,R10			;#14
 	
 	
 	;SEG0 schreiben
-	mov R17,R10
-	andi R17,0x0F
-	rcall dez2seg
-	ldi ZL, SEG0
-	st Z, R16
+	mov R17,R10			;#15
+	andi R17,0x0F			;#16
+	rcall dez2seg			;#17
+	ldi ZL, SEG0			;#18
+	st Z, R16			;#19
 	
 	;SEG1 schreiben
-	mov R17, R10
-	lsr	R17
-	lsr	R17
-	lsr	R17
-	lsr	R17
-	rcall dez2seg
-	ldi ZL, SEG1
-	st Z, R16
+	mov R17, R10			;#20
+	lsr	R17			;#21
+	lsr	R17			;#22
+	lsr	R17			;#23
+	lsr	R17			;#24
+	rcall dez2seg			;#25
+	ldi ZL, SEG1			;#26
+	st Z, R16			;#27
 	
 	;SEG2 schreiben
-	mov R17,R11
-	andi R17,0x0F
-	rcall dez2seg
-	ldi ZL, SEG2
-	st Z, R16
+	mov R17,R11			;#28
+	andi R17,0x0F			;#29
+	rcall dez2seg			;#30
+	ldi ZL, SEG2			;#31
+	st Z, R16			;#32
 	
 	;SEG3 schreiben
-	mov R17, R11
-	lsr	R17
-	lsr	R17
-	lsr	R17
-	lsr	R17
-	rcall dez2seg
-	ldi ZL, SEG3
-	st Z, R16
+	mov R17, R11			;#33
+	lsr	R17			;#34
+	lsr	R17			;#35
+	lsr	R17			;#36
+	lsr	R17			;#37
+	rcall dez2seg			;#38
+	ldi ZL, SEG3			;#39
+	st Z, R16			;#40
 	
 	;SEGEN	
-	ldi ZL, SEGEN		
+	ldi ZL, SEGEN			;#41
 	
-	cpi R22,0b00010000	
-	brne continue		
-	ldi R22,0x01
+	cpi R22,0b00010000		;#42
+	brne continue			;#43
+	ldi R22,0x01			;#44
 	continue:
-	st	Z, R22			
-	lsl R22				
-	rcall delay	
+	st	Z, R22			;#45
+	lsl R22				;#46
+	rcall delay			;#47
 	
-	rjmp main
+	rjmp main			;#48
 
 
 ; R16:7Seg-Cathode-Pattern, R17:binärwert
@@ -151,11 +156,12 @@ dez2seg:
 	dez2seg_e:
 		;ldi R16, 0b00000110
 		ldi R16, 0b11111001
-ret
+		ret
 
 
 
 delay:
+	ret					;#91
 	eor R18,R18
 	loop_delay0:
 	

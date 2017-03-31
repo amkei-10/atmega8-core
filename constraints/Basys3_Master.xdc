@@ -12,10 +12,16 @@ set_property CONFIG_VOLTAGE 3.3 [current_design]
 #set_property IOSTANDARD LVCMOS33 [get_ports clk]
 
 ## Clock signal
-set_property PACKAGE_PIN W5 [get_ports clk]							
-	set_property IOSTANDARD LVCMOS33 [get_ports clk]
-	create_clock -add -name sys_clk_pin -period 10.00 -waveform {0 5} [get_ports clk]
-	#create_clock -add -name sys_clk_pin -period 11.00 -waveform {0 5.5} [get_ports clk]
+set_property PACKAGE_PIN W5 [get_ports clk]
+set_property IOSTANDARD LVCMOS33 [get_ports clk]
+create_clock -period 10.00 -name sys_clk_pin -waveform {0.000 5.00} -add [get_ports clk]
+#-period 11.00 -waveform {0 5.5}  	-> 90MHz
+#-period 10.00 -waveform {0 5}  	->100MHz
+#-period  9.00 -waveform {0 4.5} 	->111MHz
+#-period  8.00 -waveform {0 4} 		->125MHz
+#-period  6.66 -waveform {0 3.33} 	->150MHz
+#-period  6.00 -waveform {0 3} 		->166MHz
+
 
 ## Switches
 set_property PACKAGE_PIN V17 [get_ports {hw_pinb[0]}]
@@ -309,4 +315,6 @@ set_property IOSTANDARD LVCMOS33 [get_ports {hw_pind[2]}]
 #create_clock -period 10.00 -name sys_clk_pin -waveform {0 5} -add
 
 #create_generated_clock -name led_clk -source [get_ports clk] -divide_by 100 -add -master_clock sys_clk_pin [get_ports clk]
+
+
 

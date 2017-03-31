@@ -22,28 +22,28 @@
 	.def ZL = R30
 	.def ZH = R31
 
-	nop
-	nop
-	nop
-	nop
+	nop			;#0:
+	nop			;#1:
+	nop			;#2:
+	nop			;#3:	
 	
-	eor	ZH,ZH
-	ldi	ZH,0x03
-	ldi	ZL,0xE8		;Z<-1000d		#6
-	ldi	R16, 0x06	;R16<-0x06		#7
-	ldi	R17, 0x04	;R17<-0x04		#8
-	st	Z, R16		;dm(1000)<-0x06		#9
-	push	R17		;sp(1023)<-0x04		#10
-	add	R17, R16	;R17<-0x0A		#11
-	push 	R16		;sp(1022)<-0x06		#12
-	push	R17		;sp(1021)<-0x0a		#13
+	eor	r1,r1
+	eor	r2,r2
+	eor	r3,r3
 	
-	ldi	ZL,0xFD		;Z<-1021		#14
-	ld	R15, Z		;R15<-0x0a		#15
-	inc	ZL		;Z<-1022		#16
-	ld	R14, Z		;R14<-0x06		#17
+	ldi 	r16,0x16
+	ldi	r17,0x01
+	ldi	r21,0x01
+	ldi	r22,0x02
 	
-	pop	R10		;R10<-0x0a		#18
-	pop	R9		;R9<-0x06		#19
-	nop			;			#20
-	
+	add             r16,r21		;r16=0x17
+	add             r16,r22		;r16=0x19
+	add             r16,r21		;r16=0x1A
+	add             r16,r22		;r16=0x1C
+	add             r16,r21		;r16=0x1D
+	mov		r16,r17		;r16=0x01
+	add             r16,r22		;r16=0x03
+	add             r16,r21		;r16=0x04
+	mov		r16,r17		;r16=0x01
+	add             r16,r21		;r16=0x02
+end:

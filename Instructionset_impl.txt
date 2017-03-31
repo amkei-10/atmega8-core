@@ -1,0 +1,51 @@
+     Legend:
+        r   any register
+        d   `ldi' register (r16-r31)
+        e   pointer registers (X,Y,Z)
+        M   immediate value from 0 to 255
+        P   Port address value from 0 to 63. (in, out)
+        K   immediate value from 0 to 63 (used in `adiw', `sbiw')
+        l   signed pc relative offset from -64 to 63
+        L   signed pc relative offset from -2048 to 2047
+        ?   use this opcode entry if no param, else use next opcode
+     
+     0000000000000000   nop     
+     000011rdddddrrrr   lsl     r
+     000011rdddddrrrr   add     r,r     
+     000110rdddddrrrr   sub     r,r
+     000101rdddddrrrr   cp      r,r
+     000111rdddddrrrr   rol     r
+     000111rdddddrrrr   adc     r,r
+     001000rdddddrrrr   and     r,r
+     001001rdddddrrrr   eor     r,r
+     001010rdddddrrrr   or      r,r
+     001011rdddddrrrr   mov     r,r          
+     10o0oo0dddddbooo   ldd     r,b
+     100!000dddddee-+   ld      r,e
+     10o0oo1rrrrrbooo   std     b,r
+     100!001rrrrree-+   st      e,r     
+     111101lllllll000   brcc    l
+     111101lllllll001   brne    l
+     111100lllllll001   breq    l
+     111100lllllll000   brcs    l  
+     111100lllllllsss   brbs    s,l
+     111101lllllllsss   brbc    s,l   
+     1001010rrrrr0000   com     r
+     1001010rrrrr0101   asr     r
+     1001010rrrrr1010   dec     r
+     1001010rrrrr0011   inc     r
+     1001010rrrrr0110   lsr     r
+     1001010100001000   ret     
+     1001010000001000   sec
+     1001010011001000   cls
+     1001000rrrrr1111   pop     r     
+     1001001rrrrr1111   push    r     
+     1110KKKKddddKKKK   ldi     d,M
+     0011KKKKddddKKKK   cpi     d,M
+     0101KKKKddddKKKK   subi    d,M
+     0110KKKKddddKKKK   ori     d,M
+     0111KKKKddddKKKK   andi    d,M     
+     1100LLLLLLLLLLLL   rjmp    L
+     1101LLLLLLLLLLLL   rcall   L     
+     10110PPdddddPPPP   in      r,P
+     10111PPrrrrrPPPP   out     P,r

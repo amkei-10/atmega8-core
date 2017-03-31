@@ -34,16 +34,18 @@ use work.pkg_processor.all;
 --use UNISIM.VComponents.all;
 
 entity blockram is
+	generic( REG_WIDTH : integer := PMADDR_WIDTH;
+			 SLOTS	   : integer := 1024 );
     port ( clk      : in STD_LOGIC;
-           data_in	: in STD_LOGIC_VECTOR (PMADDR_WIDTH-1 downto 0);
+           data_in	: in STD_LOGIC_VECTOR (REG_WIDTH-1 downto 0);
            addr 	: in STD_LOGIC_VECTOR (9 downto 0);           
            w_e      : in std_logic;
            en       : in std_logic;
-		   data_out : out STD_LOGIC_VECTOR (PMADDR_WIDTH-1 downto 0));
+		   data_out : out STD_LOGIC_VECTOR (REG_WIDTH-1 downto 0));
 end blockram;
 
 architecture Behavioral of blockram is	
-	type 	memslot is array(1023 downto 0) of std_logic_vector(PMADDR_WIDTH-1 downto 0);
+	type 	memslot is array(SLOTS-1 downto 0) of std_logic_vector(REG_WIDTH-1 downto 0);
 	signal 	memory:memslot := (others => (others => '0'));	
 begin
 	

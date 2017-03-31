@@ -30,18 +30,19 @@ entity ALU is
     Port ( OPCODE 		: in STD_LOGIC_VECTOR (4 downto 0) 	:= (others => '0');
            OPA 			: in STD_LOGIC_VECTOR (7 downto 0) 	:= (others => '0');
            OPB 			: in STD_LOGIC_VECTOR (7 downto 0) 	:= (others => '0');
-           OPIM			: in STD_LOGIC_VECTOR (7 downto 0) 	:= (others => '0');
+           --OPCONST		: in STD_LOGIC_VECTOR (7 downto 0) 	:= (others => '0');
            CARRY		: in STD_LOGIC := '0';
            RES 			: out STD_LOGIC_VECTOR (7 downto 0) := (others => '0');
-           state_alu	: out STD_LOGIC_VECTOR (7 downto 0)	:= (others => '0'));
+           --state_alu	: out STD_LOGIC_VECTOR (7 downto 0)	:= (others => '0'));
+           state_alu	: out STD_LOGIC_VECTOR (2 downto 0)	:= (others => '0'));
 end ALU;
 
 architecture Behavioral of ALU is
   signal z : std_logic := '0';            -- Zero Flag
   signal c : std_logic := '0';            -- Carry Flag
-  signal v : std_logic := '0';            -- Overflow Flag
+  --signal v : std_logic := '0';            -- Overflow Flag
   signal n : std_logic := '0';            -- negative flag
-  signal s : std_logic := '0';            -- sign flag
+  --signal s : std_logic := '0';            -- sign flag
   signal erg : std_logic_vector(7 downto 0);  -- Zwischenergebnis
   
   signal OPB_REG : STD_LOGIC_VECTOR (7 downto 0) := (others => '0');
@@ -49,20 +50,12 @@ architecture Behavioral of ALU is
   
 begin
 
-
-	select_opb:process(OPCODE, OPB, OPIM)
+	select_opb:process(OPCODE, OPB)
 	begin
 		case OPCODE is
-			when op_sub => 				
-				OPB_REG <= not OPB;
-			when op_ori | op_andi => 	
-				OPB_REG <= OPIM;
-			when op_subi => 			
-				OPB_REG <= not OPIM;
-			when op_dec | op_inc =>
-				OPB_REG <= (others => '0');
-			when others =>
-				OPB_REG <= OPB;
+			when op_sub => 				OPB_REG <= not OPB;
+			when op_dec | op_inc =>		OPB_REG <= (others => '0');
+			when others =>				OPB_REG <= OPB;
 		end case;
 	end process;
 
@@ -70,14 +63,10 @@ begin
 	select_bconst:process(OPCODE, CARRY)
 	begin
 		case OPCODE is
-			when op_sub | op_inc | op_subi => 	
-				bconst <= "00000001";
-			when op_dec => 						
-				bconst <= (others => '1');
-			when op_adc	=>						
-				bconst <= "0000000"&CARRY;
-			when others => 						
-				bconst <= (others => '0');
+			when op_sub | op_inc  => 	bconst <= "00000001";
+			when op_dec => 				bconst <= (others => '1');
+			when op_adc	=>				bconst <= "0000000"&CARRY;
+			when others => 				bconst <= (others => '0');
 		end case;
 	end process;
 
@@ -93,19 +82,19 @@ begin
     
     case OPCODE is
 
-      when op_add | op_sub | op_subi | op_inc | op_dec | op_adc =>
+      when op_add | op_sub | op_inc | op_dec | op_adc =>
         erg <= std_logic_vector(unsigned(OPA) + unsigned(OPB_REG) + unsigned(bconst));
 
 	  when op_com =>
         erg <= std_logic_vector(x"FF" - unsigned(OPA));
         
-      when op_or | op_ori =>
+      when op_or =>
         erg <= OPA or OPB_REG;
         
       when op_eor =>
         erg <= OPA xor OPB_REG;
 
-	  when op_and | op_andi =>
+	  when op_and =>
         erg <= OPA and OPB_REG;
         
       when op_mov =>
@@ -114,9 +103,9 @@ begin
 	  when op_lsr => 
 		erg <= '0' & OPA(7 downto 1);
         
-       when op_asr => 
+      when op_asr => 
 		erg <= OPA(7) & OPA(7 downto 1);
-        
+		
       when others => null;
     end case;
   end process kern_ALU;
@@ -127,56 +116,45 @@ begin
   -- type   : combinational
   -- inputs : OPA, OPB_REG, OPCODE, erg
   -- outputs: z, c, v, n
-  Berechnung_SREG: process (OPA, OPB, OPB_REG, OPCODE, erg, n, c)	
+  Berechnung_SREG: process (OPA, OPB, OPCODE, erg)
   begin  -- process Berechnung_SREG
-    z<=not (erg(7) or erg(6) or erg(5) or erg(4) or erg(3) or erg(2) or erg(1) or erg(0));
+    z<=not (((erg(7) or erg(6)) or (erg(5) or erg(4))) or ((erg(3) or erg(2)) or (erg(1) or erg(0))));
 
 	-- Default-Setting for : AND, ANDI, OR, ORI ...
     n <= erg(7);
     c <= '0';
-    v <= '0';
     
     case OPCODE is
       -- ADD, ADC
       when op_add | op_adc =>
 		c<=(OPA(7) and OPB(7)) or (OPB(7) and not erg(7)) or (not erg(7) and OPA(7));
-		v<=(OPA(7) and OPB(7) and (not erg(7))) or ((not OPA(7)) and (not OPB(7)) and  erg(7));
-      
-      -- INC
-	  when op_inc =>
-		v<=erg(7) and not(erg(6) or erg(5) or erg(4) or erg(3) or erg(2) or erg(1) or erg(0));        
 		  
       -- SUB, SUBI, CP, CPI
-      when op_sub | op_subi =>
+      when op_sub =>
 		c<=(not OPA(7) and OPB(7)) or (OPB(7) and erg(7)) or (erg(7) and not OPA(7));
-		v<=(OPA(7) and not OPB(7) and not erg(7)) or (not OPA(7) and OPB(7) and erg(7));
 	  
-	  -- COM
-	  when op_com =>
+	  -- COM, SEC
+	  when op_com | op_sec=>
 		c<='1';
 	  
 	  -- ASR 
 	  when op_asr =>
 		c<=OPA(0);
-		v<=(n xor c);
-	  
-	  -- DEC 
-	  when op_dec =>
-		v<=(not erg(7) and erg(6) and erg(5) and erg(4) and erg(3) and erg(2) and erg(1) and erg(0));		
 		
 	  -- LSR or EOR
-	  when op_lsr | op_eor =>
+	  when op_lsr | op_eor | op_or =>
 		c<=OPA(0);
 		n<='0';
-		v<=(n xor c);
 
+	  
       when others => null;
     end case;
     
   end process Berechnung_SREG;  
 
-  s <= v xor n;
+  --s <= v xor n;
   RES <= erg;
-  state_alu <= '0' & '0' & '0' & s & v & n & z & c;
+  --state_alu <= '0' & '0' & '0' & s & v & n & z & c;
+  state_alu <= n & z & c;
   
 end Behavioral;

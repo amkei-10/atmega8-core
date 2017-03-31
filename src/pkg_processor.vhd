@@ -3,39 +3,32 @@ use ieee.std_logic_1164.all;
 
 package pkg_processor is
   
-    constant op_NOP :		std_logic_vector(4 downto 0) := "00000";  -- NoOperation (als Addition implementiert, die Ergebnisse (werden aber nicht gespeichert...)
+	-- GRP: operations with two operants (@see decoder, some operations are converted)
+    constant op_nop :		std_logic_vector(4 downto 0) := "00000";  -- NoOperation (als Addition implementiert, die Ergebnisse (werden aber nicht gespeichert...)
   
-    constant op_add : 		std_logic_vector(4 downto 0) := "00000";  -- Addition
-	constant op_sub : 		std_logic_vector(4 downto 0) := "00001";  -- Subtraction
-	constant op_or  : 		std_logic_vector(4 downto 0) := "00010";  -- bitwise OR
-	constant op_ldi : 		std_logic_vector(4 downto 0) := "00011";  -- Load immediate
+    constant op_add : 		std_logic_vector(4 downto 0) := "00000";  	-- ADD, LSL				--brcc
+	constant op_sub : 		std_logic_vector(4 downto 0) := "00001";  	-- SUB, CP, CPI, SUBI	--brne
+	constant op_or  : 		std_logic_vector(4 downto 0) := "00010";  	-- OR, ORI				--brcs
 
-	constant op_cp  : 		std_logic_vector(4 downto 0) := "00100";  -- compare
-	constant op_adc : 		std_logic_vector(4 downto 0) := "00101";  -- rotate-left / add with carry
-	constant op_and : 		std_logic_vector(4 downto 0) := "00110";	 -- AND
-	constant op_eor : 		std_logic_vector(4 downto 0) := "00111";	 -- EOR
+	constant op_adc : 		std_logic_vector(4 downto 0) := "00101";  	-- ADC, ROL, RJMP		--rjmp
+	constant op_and : 		std_logic_vector(4 downto 0) := "00110";	-- AND, ANDI			--rcall
+	constant op_eor : 		std_logic_vector(4 downto 0) := "00111";	-- EOR					--ret
 
-	constant op_mov : 		std_logic_vector(4 downto 0) := "01000";	 -- MOV
-	constant op_com : 		std_logic_vector(4 downto 0) := "01001";	 -- COM
-	constant op_asr : 		std_logic_vector(4 downto 0) := "01010";	 -- ASR
-	constant op_dec : 		std_logic_vector(4 downto 0) := "01011";	 -- DEC
-
-	constant op_inc : 		std_logic_vector(4 downto 0) := "01100";	 -- INC
-	constant op_lsr : 		std_logic_vector(4 downto 0) := "01101";	 -- LSR	
-	constant op_ld: 		std_logic_vector(4 downto 0) := "01110";	
-	constant op_st: 		std_logic_vector(4 downto 0) := "01111";
-		
-	constant op_subi: 		std_logic_vector(4 downto 0) := "10000";
-	constant op_ori: 		std_logic_vector(4 downto 0) := "10001";
-	constant op_andi: 		std_logic_vector(4 downto 0) := "10010";
+	constant op_mov : 		std_logic_vector(4 downto 0) := "01000";	-- MOV, LDI				
+	constant op_dec : 		std_logic_vector(4 downto 0) := "11011";	-- DEC					--breq
+	constant op_inc : 		std_logic_vector(4 downto 0) := "11100";	-- INC
+	constant op_com : 		std_logic_vector(4 downto 0) := "11001";	-- COM
+	constant op_asr : 		std_logic_vector(4 downto 0) := "11010";	-- ASR
+	constant op_lsr : 		std_logic_vector(4 downto 0) := "11111";	-- LSR		
+	constant op_sec : 		std_logic_vector(4 downto 0) := "11100";  	-- SEC, CLC
 	
 	
 	-- specific IOMEM-addresses
-	constant def_addr_pinb	: std_logic_vector(9 downto 0) := "0000110110"; -- "0x36"
-	constant def_addr_pinc 	: std_logic_vector(9 downto 0) := "0000110011";	-- "0x33"
-	constant def_addr_pind 	: std_logic_vector(9 downto 0) := "0000110000";	-- "0x30"	
-	constant def_addr_portb	: std_logic_vector(9 downto 0) := "0000111000"; -- "0x38"
-	constant def_addr_portc	: std_logic_vector(9 downto 0) := "0000110101";	-- "0x35"
+	constant def_addr_pinb	: std_logic_vector(9 downto 0) := "00"&x"36"; 	-- "0x36"	54d
+	constant def_addr_pinc 	: std_logic_vector(9 downto 0) := "0000110011";	-- "0x33"	51d
+	constant def_addr_pind 	: std_logic_vector(9 downto 0) := "0000110000";	-- "0x30"	48d
+	constant def_addr_portb	: std_logic_vector(9 downto 0) := "0000111000"; -- "0x38"	56d
+	constant def_addr_portc	: std_logic_vector(9 downto 0) := "0000110101";	-- "0x35"	53d
 	
 	constant def_addr_segen	: std_logic_vector(9 downto 0) := "0001000000";	-- "0x40"
 	constant def_addr_seg0	: std_logic_vector(9 downto 0) := "0001000001";	-- "0x41"
@@ -43,16 +36,17 @@ package pkg_processor is
 	constant def_addr_seg2	: std_logic_vector(9 downto 0) := "0001000011";	-- "0x43"
 	constant def_addr_seg3	: std_logic_vector(9 downto 0) := "0001000100";	-- "0x44"
 	
+	-- progmem = 512 instr
 	constant PMADDR_WIDTH : integer := 9;
 	
-	constant mdec_op_rcall : std_logic_vector(2 downto 0) := "111";
-	constant mdec_op_push : std_logic_vector(2 downto 0) := "110";
-	constant mdec_op_ret : std_logic_vector(2 downto 0) := "011";
-	constant mdec_op_pop : std_logic_vector(2 downto 0) := "001";
+	constant mdec_op_push 	: std_logic_vector(2 downto 0)	:= "010";	
+	constant mdec_op_rcall 	: std_logic_vector(2 downto 0)	:= "011";	
+	constant mdec_op_pop 	: std_logic_vector(2 downto 0) 	:= "001";	--also used for ret
+	constant mdec_op_ld 	: std_logic_vector(2 downto 0)	:= "100";	
+	constant mdec_op_st 	: std_logic_vector(2 downto 0)	:= "110";	
 	
-	constant jmp_code_inv : std_logic_vector(1 downto 0) := "00";
-	constant jmp_code_inc : std_logic_vector(1 downto 0) := "01";
-	constant jmp_code_rel : std_logic_vector(1 downto 0) := "10";
-	constant jmp_code_abs : std_logic_vector(1 downto 0) := "11";
+	constant jmp_code_inc : std_logic_vector(1 downto 0) 	:= "01";
+	constant jmp_code_rel : std_logic_vector(1 downto 0) 	:= "10";
+	constant jmp_code_abs : std_logic_vector(1 downto 0) 	:= "11";
 	
 end pkg_processor;
