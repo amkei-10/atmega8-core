@@ -4,7 +4,7 @@
 - cache
 
 ## currently under construction
-- core: I/O
+- nothing
 
 ## instructionset
 | state | bincode | mnem |
@@ -14,11 +14,11 @@
 |       | 1001010100001001 | icall|
 |       | 1001010000001001 | ijmp |
 |   x   | 0000000000000000 | nop  |
-|       | 1001010100001000 | ret  |
+|   x   | 1001010100001000 | ret  |
 |       | 1001010100011000 | reti |
 |       | 1001010110001000 | sleep|
 |       | 1001010110011000 | break|
-|       | 000111rdddddrrrr | adc  |
+|   x   | 000111rdddddrrrr | adc  |
 |   x   | 000011rdddddrrrr | add  |
 |   x   | 001000rdddddrrrr | and  |
 |   x   | 000101rdddddrrrr | cp	  | 
@@ -30,7 +30,7 @@
 |   x   | 000110rdddddrrrr | sub  | 
 |       | 001001rdddddrrrr | clr  |
 |   x   | 000011rdddddrrrr | lsl  |
-|       | 000111rdddddrrrr | rol  |
+|   x   | 000111rdddddrrrr | rol  |
 |       | 001000rdddddrrrr | tst  |
 |   x   | 0111KKKKddddKKKK | andi |  
 |       | 0111KKKKddddKKKK | cbr  |   
@@ -45,16 +45,16 @@
 |       | 1111111rrrrr0sss | sbrs |
 |       | 1111100ddddd0sss | bld  |
 |       | 1111101ddddd0sss | bst  |
-|       | 10110PPdddddPPPP | in   |
-|       | 10111PPrrrrrPPPP | out  |
+|   x   | 10110PPdddddPPPP | in   |
+|   x   | 10111PPrrrrrPPPP | out  |
 |       | 10010110KKddKKKK | adiw |
 |       | 10010111KKddKKKK | sbiw |
 |       | 10011000pppppsss | cbi  |
 |       | 10011010pppppsss | sbi  |
 |       | 10011001pppppsss | sbic |
 |       | 10011011pppppsss | sbis |
-|       | 111101lllllll000 | brcc |
-|       | 111100lllllll000 | brcs |
+|   x   | 111101lllllll000 | brcc |
+|   x   | 111100lllllll000 | brcs |
 |   x   | 111100lllllll001 | breq | 
 |       | 111101lllllll100 | brge | 
 |       | 111101lllllll101 | brhc |
@@ -73,18 +73,18 @@
 |       | 111100lllllll011 | brvs |
 |       | 111101lllllllsss | brbc |
 |       | 111100lllllllsss | brbs |
-|       | 1101LLLLLLLLLLLL | rcall|
-|       | 1100LLLLLLLLLLLL | rjmp |
+|   x   | 1101LLLLLLLLLLLL | rcall|
+|   x   | 1100LLLLLLLLLLLL | rjmp |
 |       | 1001010hhhhh111h | call |
 |       | 1001010hhhhh110h | jmp  |
-|       | 1001010rrrrr0101 | asr  |
-|       | 1001010rrrrr0000 | com  | 
+|   x   | 1001010rrrrr0101 | asr  |
+|   x   | 1001010rrrrr0000 | com  | 
 |   x   | 1001010rrrrr1010 | dec  |
 |   x   | 1001010rrrrr0011 | inc  |
 |   x   | 1001010rrrrr0110 | lsr  |
 |       | 1001010rrrrr0001 | neg  |
-|       | 1001000rrrrr1111 | pop  |
-|       | 1001001rrrrr1111 | push |
+|   x   | 1001000rrrrr1111 | pop  |
+|   x   | 1001001rrrrr1111 | push |
 |       | 1001010rrrrr0111 | ror  |
 |       | 1001010rrrrr0010 | swap | 
 |       | 1001001ddddd0000 | sts  |
