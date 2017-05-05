@@ -1,23 +1,16 @@
-----------------------------------------------------------------------------------
--- Company: 
--- Engineer: 
--- 
--- Create Date: 06/23/2015 08:06:23 PM
--- Design Name: 
--- Module Name: Reg_File - Behavioral
--- Project Name: 
--- Target Devices: 
--- Tool Versions: 
+-------------------------------------------------------------------------------
+-- Title      : Register File
+-- Project    : hardCORE
+-------------------------------------------------------------------------------
+-- File       : Reg_File.vhd
+-- Author     : Mario Kellner  <s9mokell@net.fh-jena.de>
+-- Company    : 
+-- Created    : 2016/2017
+-- Platform   : Linux / Vivado 2014.4
+-- Standard   : VHDL'87
+-------------------------------------------------------------------------------
 -- Description: 
--- 
--- Dependencies: 
--- 
--- Revision:
--- Revision 0.01 - File Created
--- Additional Comments:
--- 
-----------------------------------------------------------------------------------
-
+-------------------------------------------------------------------------------
 
 library IEEE;
 use IEEE.STD_LOGIC_1164.ALL;
@@ -26,8 +19,8 @@ use IEEE.NUMERIC_STD.ALL;
 
 entity Reg_File is
     Port ( clk			: in STD_LOGIC := '0';
-           w_e 			: in bit;
-           --addr_opa_w 	: in STD_LOGIC_VECTOR (4 downto 0) := "00000";
+           w_e 			: in std_logic;
+           addr_opa_w 	: in STD_LOGIC_VECTOR (4 downto 0) := "00000";
            addr_opa 	: in STD_LOGIC_VECTOR (4 downto 0) := "00000";
            addr_opb 	: in STD_LOGIC_VECTOR (4 downto 0) := "00000";
            data_opim	: in STD_LOGIC_VECTOR (7 downto 0) := x"00";
@@ -36,16 +29,10 @@ entity Reg_File is
            addr_Z		: out STD_LOGIC_VECTOR (9 downto 0) := "0000000000");
 end Reg_File;
 
--- ACHTUNG!!! So einfach wird das mit dem Registerfile am Ende nicht.
--- hier muss noch einiges bzgl. Load/Store gemacht werden...
-
 
 architecture Behavioral of Reg_File is
   type regs is array(31 downto 0) of std_logic_vector(7 downto 0); 
   signal reg_mem:regs := (others => (others => '0'));
-  
-  signal addr_write_IE : std_logic_vector (4 downto 0);
-  signal addr_write_WB : std_logic_vector (4 downto 0);
 begin
   
   -- purpose: Schreibprozess für Registerfile
@@ -53,22 +40,17 @@ begin
   -- inputs : clk, addr_opa, w_e, data_res
   -- outputs: reg_mem
   registerfile: process (clk)
-  begin  -- process registerfile
-    if clk'event and clk = '1' then  -- rising clock edge
+  begin 
+    if clk'event and clk = '1' then
       if w_e = '1' then
-        --reg_mem(to_integer(unsigned(addr_opa_w))) <= data_opim;
-        reg_mem(to_integer(unsigned(addr_write_WB))) <= data_opim;
+        reg_mem(to_integer(unsigned(addr_opa_w))) <= data_opim;
       end if;
-      addr_write_IE <= addr_opa;
-      addr_write_WB <= addr_write_IE;
     end if;
   end process registerfile;
 
   -- nebenlaeufiges Lesen der Registerspeicher
   data_opa <= reg_mem(to_integer(unsigned(addr_opa)));
   data_opb <= reg_mem(to_integer(unsigned(addr_opb)));
-  
-  --addr_Z <= reg_mem(to_integer(unsigned(addr_opa)+1))(1 downto 0) & reg_mem(to_integer(unsigned(addr_opa)));
   addr_Z <= reg_mem(31)(1 downto 0) & reg_mem(30);
   
 end Behavioral;

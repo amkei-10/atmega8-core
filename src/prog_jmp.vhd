@@ -1,22 +1,16 @@
-----------------------------------------------------------------------------------
--- Company: 
--- Engineer: 
--- 
--- Create Date: 06/23/2015 08:30:37 PM
--- Design Name: 
--- Module Name: prog_cnt - Behavioral
--- Project Name: 
--- Target Devices: 
--- Tool Versions: 
+-------------------------------------------------------------------------------
+-- Title      : Jump Decoder, SREG
+-- Project    : hardCORE
+-------------------------------------------------------------------------------
+-- File       : prog_jmp.vhd
+-- Author     : Mario Kellner  <s9mokell@net.fh-jena.de>
+-- Company    : 
+-- Created    : 2016/2017
+-- Platform   : Linux / Vivado 2014.4
+-- Standard   : VHDL'87
+-------------------------------------------------------------------------------
 -- Description: 
--- 
--- Dependencies: 
--- 
--- Revision:
--- Revision 0.01 - File Created
--- Additional Comments:
--- 
-----------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
 
 
 library IEEE;
@@ -27,11 +21,13 @@ use work.pkg_processor.all;
 
 entity prog_jmp is
   port (
-		signal	opcode 		: in std_logic_vector(2 downto 0) := (others => '0');
-		signal	state_sreg	: in std_logic_vector(2 downto 0);
-		signal	jmpcode_in	: in std_logic_vector(1 downto 0);
-		signal	jmpcode_out	: out std_logic_vector(1 downto 0) := jmp_code_inc;
-		signal 	flush_instr	: out std_logic	:= '0'
+		signal	opcode 		: in std_logic_vector(1 downto 0) 	:= (others => '0');
+		signal	state_alu	: in std_logic_vector(1 downto 0) 	:= (others => '0');
+		signal	mask_sreg	: in std_logic_vector(1 downto 0) 	:= (others => '0');
+		signal	sreg_curr	: in std_logic_vector(1 downto 0) 	:= (others => '0');
+		signal	sreg_new	: out std_logic_vector(1 downto 0) 	:= (others => '0');
+		signal	jmpcode_in	: in std_logic_vector(1 downto 0) 	:= jmpCode_inc;
+		signal	jmpcode_out	: out std_logic_vector(1 downto 0) 	:= jmpCode_inc
     );
 end prog_jmp;
 
@@ -39,45 +35,42 @@ end prog_jmp;
 architecture Behavioral of prog_jmp is
 begin
 
-	set_rel_pm:process(opcode, jmpcode_in, state_sreg)		
+	calc_sreg : process(mask_sreg, state_alu, sreg_curr)		
+	begin
+		sreg_new <= (state_alu and mask_sreg) or (sreg_curr and not mask_sreg);	
+	end process;
+
+
+	exec_branch:process(opcode, jmpcode_in, sreg_curr)
+		variable cmp : std_logic_vector(3 downto 0);
 	begin
 		
-		flush_instr <= '0';
-		jmpcode_out <= jmpcode_in;
-		
-		-- if relative OR absolute jump
-		if jmpcode_in(1) = '1' then
+		cmp := opcode & jmpcode_in;		
 			
-			case opcode is
+		case cmp is
 				
-				-- brcc
-				when op_add(2 downto 0) => 
-					flush_instr <= not state_sreg(0);					--jump if state_sreg(0) = '0'
-					jmpcode_out <= not state_sreg(0) & state_sreg(0);
+			-- brcc : jump if sreg_curr(0) = '0'
+			when op_lsr(1 downto 0) & jmpCode_relBranch => 
+				jmpcode_out <= sreg_curr(0) & not sreg_curr(0);
 				
-				-- brne
-				when op_sub(2 downto 0)  => 
-					flush_instr <= not state_sreg(1);					--jump if state_sreg(1) = '0'
-					jmpcode_out <= not state_sreg(1) & state_sreg(1);
+			-- brne : jump if sreg_curr(1) = '0'
+			when op_and(1 downto 0) & jmpCode_relBranch  => 
+				jmpcode_out <= sreg_curr(1) & not sreg_curr(1);
 				
-				-- brcs
-				when op_or(2 downto 0)  => 
-					flush_instr <= state_sreg(0);						--jump if state_sreg(0) = '1'
-					jmpcode_out <= state_sreg(0) & not state_sreg(0);
+			-- brcs : jump if sreg_curr(0) = '1'
+			when op_or(1 downto 0) & jmpCode_relBranch  => 
+				jmpcode_out <= not sreg_curr(0) & sreg_curr(0);
 				
-				-- breq
-				when op_dec(2 downto 0)  => 
-					flush_instr <= state_sreg(1);						--jump if state_sreg(1) = '1'
-					jmpcode_out <= state_sreg(1) & not state_sreg(1);
-				
-				-- rjmp, rcall
-				when op_adc(2 downto 0) | op_and(2 downto 0) | op_eor(2 downto 0) => 
-					flush_instr <= '1';
-				
-				when others => jmpcode_out <= jmp_code_inc;
-			end case;
+			-- breq : jump if sreg_curr(1) = '1'
+			when op_add(1 downto 0) & jmpCode_relBranch  => 
+				jmpcode_out <= not sreg_curr(1) & sreg_curr(1);
 			
-		end if;
+			--swap bits for no-conditional jumps (no effect for inc = "11")
+			when others => 
+				jmpcode_out(1) <= jmpcode_in(0);
+				jmpcode_out(0) <= jmpcode_in(1);
+					
+		end case;
 		
 	end process;
 

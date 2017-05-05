@@ -1,23 +1,16 @@
-----------------------------------------------------------------------------------
--- Company: 
--- Engineer: 
--- 
--- Create Date: 06/23/2015 09:44:25 AM
--- Design Name: 
--- Module Name: ALU - Behavioral
--- Project Name: 
--- Target Devices: 
--- Tool Versions: 
+-------------------------------------------------------------------------------
+-- Title      : ALU
+-- Project    : hardCORE
+-------------------------------------------------------------------------------
+-- File       : ALU.vhd
+-- Author     : Mario Kellner  <s9mokell@net.fh-jena.de>
+-- Company    : 
+-- Created    : 2016/2017
+-- Platform   : Linux / Vivado 2014.4
+-- Standard   : VHDL'87
+-------------------------------------------------------------------------------
 -- Description: 
--- 
--- Dependencies: 
--- 
--- Revision:
--- Revision 0.01 - File Created
--- Additional Comments:
--- 
-----------------------------------------------------------------------------------
-
+-------------------------------------------------------------------------------
 
 library IEEE;
 use IEEE.STD_LOGIC_1164.ALL;
@@ -27,46 +20,42 @@ use work.pkg_processor.all;
 
 
 entity ALU is
-    Port ( OPCODE 		: in STD_LOGIC_VECTOR (4 downto 0) 	:= (others => '0');
+    Port ( OPCODE 		: in STD_LOGIC_VECTOR (3 downto 0) 	:= (others => '0');
            OPA 			: in STD_LOGIC_VECTOR (7 downto 0) 	:= (others => '0');
            OPB 			: in STD_LOGIC_VECTOR (7 downto 0) 	:= (others => '0');
-           --OPCONST		: in STD_LOGIC_VECTOR (7 downto 0) 	:= (others => '0');
-           CARRY		: in STD_LOGIC := '0';
+           OPCONST		: in STD_LOGIC 						:= '0';
            RES 			: out STD_LOGIC_VECTOR (7 downto 0) := (others => '0');
-           --state_alu	: out STD_LOGIC_VECTOR (7 downto 0)	:= (others => '0'));
-           state_alu	: out STD_LOGIC_VECTOR (2 downto 0)	:= (others => '0'));
+           state_alu	: out STD_LOGIC_VECTOR (1 downto 0)	:= (others => '0'));
 end ALU;
 
 architecture Behavioral of ALU is
-  signal z : std_logic := '0';            -- Zero Flag
-  signal c : std_logic := '0';            -- Carry Flag
-  --signal v : std_logic := '0';            -- Overflow Flag
-  signal n : std_logic := '0';            -- negative flag
-  --signal s : std_logic := '0';            -- sign flag
-  signal erg : std_logic_vector(7 downto 0);  -- Zwischenergebnis
+  signal z : std_logic := '0';            	-- Zero Flag
+  signal c : std_logic := '0';            	-- Carry Flag
+  --signal v : std_logic := '0';          	-- Overflow Flag
+  --signal n : std_logic := '0';            -- negative flag
+  --signal s : std_logic := '0';          	-- sign flag
+  signal erg : std_logic_vector(7 downto 0);-- Zwischenergebnis
   
+  signal OPA_REG : STD_LOGIC_VECTOR (7 downto 0) := (others => '0');
   signal OPB_REG : STD_LOGIC_VECTOR (7 downto 0) := (others => '0');
-  signal bconst : STD_LOGIC_VECTOR (7 downto 0) := (others => '0');
   
 begin
 
-	select_opb:process(OPCODE, OPB)
+	-- purpose: prepairs operants depending by the operation
+	-- type   : combinational
+	-- inputs : OPA, OPB, OPCODE(3 downto 2)
+	-- outputs: OPA_REG, OPB_REG
+	setup_operants:process(OPCODE(3 downto 2), OPA, OPB)
 	begin
-		case OPCODE is
-			when op_sub => 				OPB_REG <= not OPB;
-			when op_dec | op_inc =>		OPB_REG <= (others => '0');
-			when others =>				OPB_REG <= OPB;
-		end case;
-	end process;
-
-
-	select_bconst:process(OPCODE, CARRY)
-	begin
-		case OPCODE is
-			when op_sub | op_inc  => 	bconst <= "00000001";
-			when op_dec => 				bconst <= (others => '1');
-			when op_adc	=>				bconst <= "0000000"&CARRY;
-			when others => 				bconst <= (others => '0');
+	
+		OPA_REG <= OPA;
+		OPB_REG <= OPB;
+		
+		case OPCODE(3 downto 2) is
+			when op_sub(3 downto 2)	=> 	OPB_REG <= not OPB;				-- overlap op_lsr
+			when op_com(3 downto 2)	=> 	OPB_REG <= not(OPA);			
+										OPA_REG <= x"FF";
+			when others 			=>	null;				
 		end case;
 	end process;
 
@@ -74,78 +63,87 @@ begin
   -- purpose: Kern-ALU zur Berechnung des Datenausganges
   -- type   : combinational
   -- inputs : OPA, OPB, OPCODE
-  -- outputs: erg
-  -- todo	: optimieren/minimieren (24.11.16) ADD/SUB/INC/DEC/SUBI/CP/CPI
-  kern_ALU: process (OPA, OPB_REG, bconst, OPCODE)
+  -- outputs: erg  
+  kern_ALU: process (OPA_REG, OPB_REG, OPCONST, OPCODE(2 downto 0))
+	variable opconst_vector : std_logic_vector(7 downto 0);
   begin  -- process kern_ALU
-    erg <= "00000000";                  -- verhindert Latches
+    erg <= "00000000";
     
-    case OPCODE is
+    opconst_vector := "0000000" & OPCONST;
+    
+    case OPCODE(2 downto 0) is
 
-      when op_add | op_sub | op_inc | op_dec | op_adc =>
-        erg <= std_logic_vector(unsigned(OPA) + unsigned(OPB_REG) + unsigned(bconst));
+      when op_add(2 downto 0) | op_sub(2 downto 0) =>
+        erg <= std_logic_vector(unsigned(OPA_REG) + unsigned(OPB_REG) + unsigned(opconst_vector));
+        
+      when op_or(2 downto 0) =>
+        erg <= OPA_REG or OPB_REG;
+        
+      when op_eor(2 downto 0) =>
+        erg <= OPA_REG xor OPB_REG;
 
-	  when op_com =>
-        erg <= std_logic_vector(x"FF" - unsigned(OPA));
+	  when op_and(2 downto 0) =>
+        erg <= OPA_REG and OPB_REG;
         
-      when op_or =>
-        erg <= OPA or OPB_REG;
-        
-      when op_eor =>
-        erg <= OPA xor OPB_REG;
-
-	  when op_and =>
-        erg <= OPA and OPB_REG;
-        
-      when op_mov =>
+      when op_mov(2 downto 0) =>
         erg <= OPB_REG;
 		
-	  when op_lsr => 
-		erg <= '0' & OPA(7 downto 1);
+	  when op_lsr(2 downto 0) => 
+		erg <= '0' & OPA_REG(7 downto 1);
         
-      when op_asr => 
-		erg <= OPA(7) & OPA(7 downto 1);
+      when op_asr(2 downto 0) => 
+		erg <= OPA_REG(7) & OPA_REG(7 downto 1);
 		
       when others => null;
     end case;
   end process kern_ALU;
 
 
-
-  -- purpose: berechnet die stateflagsw_e_sreg
+  -- purpose: berechnet die stateflags
   -- type   : combinational
-  -- inputs : OPA, OPB_REG, OPCODE, erg
-  -- outputs: z, c, v, n
-  Berechnung_SREG: process (OPA, OPB, OPCODE, erg)
+  -- inputs : OPA, OPB, OPCODE(3 downto 2), erg
+  -- outputs: z, c
+  Berechnung_SREG: process (OPA, OPB, OPCODE(3 downto 2), erg)
+	variable MSB : std_logic_vector ( 2 downto 0);
   begin  -- process Berechnung_SREG
-    z<=not (((erg(7) or erg(6)) or (erg(5) or erg(4))) or ((erg(3) or erg(2)) or (erg(1) or erg(0))));
-
-	-- Default-Setting for : AND, ANDI, OR, ORI ...
-    n <= erg(7);
+    
+    z <= '0'; 
+    --z<=not (((erg(7) or erg(6)) or (erg(5) or erg(4))) or ((erg(3) or erg(2)) or (erg(1) or erg(0))));   
+	
+	case erg is
+		when "00000000" => z <= '1';
+		when others		=> z <= '0';
+	end case;
+	
+	-- Default-Setting for
     c <= '0';
     
-    case OPCODE is
+    MSB := OPA(7) & OPB(7) & erg(7);
+    
+    case OPCODE(3 downto 2) is
       -- ADD, ADC
-      when op_add | op_adc =>
-		c<=(OPA(7) and OPB(7)) or (OPB(7) and not erg(7)) or (not erg(7) and OPA(7));
+      when op_add(3 downto 2) =>
+		--c<=(OPA(7) and OPB(7)) or (OPB(7) and not erg(7)) or (not erg(7) and OPA(7));
+		case MSB is
+			when "010" | "100" | "110" | "111" => c <= '1';
+			when others => null;
+		end case;
 		  
       -- SUB, SUBI, CP, CPI
-      when op_sub =>
-		c<=(not OPA(7) and OPB(7)) or (OPB(7) and erg(7)) or (erg(7) and not OPA(7));
+      when op_sub(3 downto 2) =>
+		--c<=(not OPA(7) and OPB(7)) or (OPB(7) and erg(7)) or (erg(7) and not OPA(7));
+		case MSB is
+			when "001" | "010" | "011" | "111"	=> c <= '1';
+			when others => null;
+		end case;	  
 	  
 	  -- COM, SEC
-	  when op_com | op_sec=>
+	  when op_com(3 downto 2) =>
 		c<='1';
 	  
-	  -- ASR 
-	  when op_asr =>
-		c<=OPA(0);
-		
-	  -- LSR or EOR
-	  when op_lsr | op_eor | op_or =>
-		c<=OPA(0);
-		n<='0';
-
+	  -- ASR, LSR, CLC
+	  when op_asr(3 downto 2) =>
+		c<=OPA(0);		
 	  
       when others => null;
     end case;
@@ -155,6 +153,6 @@ begin
   --s <= v xor n;
   RES <= erg;
   --state_alu <= '0' & '0' & '0' & s & v & n & z & c;
-  state_alu <= n & z & c;
+  state_alu <= z & c;
   
 end Behavioral;

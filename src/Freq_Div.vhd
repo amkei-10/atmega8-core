@@ -1,22 +1,15 @@
 -------------------------------------------------------------------------------
--- Title      : decoder
--- Project    : 
+-- Title      : Frequency Divider
+-- Project    : hardCORE
 -------------------------------------------------------------------------------
--- File       : decoder.vhd
+-- File       : Freq_Div.vhd
 -- Author     : Mario Kellner  <s9mokell@net.fh-jena.de>
 -- Company    : 
--- Created    : 2015-06-23
--- Last update: 2015-06-25
--- Platform   : 
+-- Created    : 2016/2017
+-- Platform   : Linux / Vivado 2014.4
 -- Standard   : VHDL'87
 -------------------------------------------------------------------------------
 -- Description: 
--------------------------------------------------------------------------------
--- Copyright (c) 2015 
--------------------------------------------------------------------------------
--- Revisions  :
--- Date        Version  Author  	Description
--- 2015-06-23  1.0      mkellner	Created
 -------------------------------------------------------------------------------
 
 library ieee;
@@ -32,7 +25,6 @@ entity Freq_Div is
 end Freq_Div;
 
 architecture Behavioral of Freq_Div is
-	--signal clk_reg : std_logic := '0';
 begin
 	process(clk_in)
 		variable counter : integer range 0 to div := 0;
@@ -49,7 +41,5 @@ begin
 			
 		end if;
 	end process;
-
-	--clk_out <= clk_reg;
 
 end Behavioral;

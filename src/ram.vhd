@@ -1,22 +1,16 @@
-----------------------------------------------------------------------------------
--- Company: 
--- Engineer: 
--- 
--- Create Date: 16.11.2016 00:22:05
--- Design Name: 
--- Module Name: blockram_mem - Behavioral
--- Project Name: 
--- Target Devices: 
--- Tool Versions: 
+-------------------------------------------------------------------------------
+-- Title      : RAM
+-- Project    : hardCORE
+-------------------------------------------------------------------------------
+-- File       : ram.vhd
+-- Author     : Mario Kellner  <s9mokell@net.fh-jena.de>
+-- Company    : 
+-- Created    : 2016/2017
+-- Platform   : Linux / Vivado 2014.4
+-- Standard   : VHDL'87
+-------------------------------------------------------------------------------
 -- Description: 
--- 
--- Dependencies: 
--- 
--- Revision:
--- Revision 0.01 - File Created
--- Additional Comments:
--- 
-----------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
 
 
 library IEEE;
@@ -30,10 +24,10 @@ use work.pkg_processor.all;
 
 -- Uncomment the following library declaration if instantiating
 -- any Xilinx leaf cells in this code.
---library UNISIM;
---use UNISIM.VComponents.all;
+library UNISIM;
+use UNISIM.VComponents.all;
 
-entity blockram is
+entity ram is
 	generic( REG_WIDTH : integer := PMADDR_WIDTH;
 			 SLOTS	   : integer := 1024 );
     port ( clk      : in STD_LOGIC;
@@ -42,9 +36,9 @@ entity blockram is
            w_e      : in std_logic;
            en       : in std_logic;
 		   data_out : out STD_LOGIC_VECTOR (REG_WIDTH-1 downto 0));
-end blockram;
+end ram;
 
-architecture Behavioral of blockram is	
+architecture Behavioral of ram is	
 	type 	memslot is array(SLOTS-1 downto 0) of std_logic_vector(REG_WIDTH-1 downto 0);
 	signal 	memory:memslot := (others => (others => '0'));	
 begin
@@ -55,16 +49,15 @@ begin
 			if en = '1' then
 				if w_e = '1' then
 					memory(to_integer(unsigned(addr))) <= data_in;
-					--data_out <= data_in;
 				--else
+					--#BlockRAM -> synched read
 					--data_out <= memory(to_integer(unsigned(addr)));
 				end if;
 			end if;
 		end if;
 	end process;
 	
-	--used as distributed RAM (!) -> asynchrone readout
-	--todo: rename or fallback to blockram when using pipelines(!!!)
+	--#distributed RAM -> asynch read
 	data_out <= memory(to_integer(unsigned(addr)));
 	
 end Behavioral;

@@ -1,22 +1,16 @@
-----------------------------------------------------------------------------------
--- Company: 
--- Engineer: 
--- 
--- Create Date: 06/_p33/_p3015 08:30:37 PM
--- Design Name: 
--- Module Name: prog_cnt - Behavioral
--- Project Name: 
--- Target Devices: 
--- Tool Versions: 
+-------------------------------------------------------------------------------
+-- Title      : Pipelinestage Instruction Exec, Stackpointhandler
+-- Project    : hardCORE
+-------------------------------------------------------------------------------
+-- File       : instr_exec.vhd
+-- Author     : Mario Kellner  <s9mokell@net.fh-jena.de>
+-- Company    : 
+-- Created    : 2016/2017
+-- Platform   : Linux / Vivado 2014.4
+-- Standard   : VHDL'87
+-------------------------------------------------------------------------------
 -- Description: 
--- 
--- Dependencies: 
--- 
--- Revision:
--- Revision 0.01 - File Created
--- Additional Comments:
--- 
-----------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
 
 
 library IEEE;
@@ -36,119 +30,111 @@ entity instr_exec is
 
     addr_opa_in		: in STD_LOGIC_VECTOR (4 downto 0);
     addr_opa_out	: out STD_LOGIC_VECTOR (4 downto 0);				
-    --addr_opa_out2	: out STD_LOGIC_VECTOR (4 downto 0);				
-    addr_opb_in		: in STD_LOGIC_VECTOR (5 downto 0);    
-    addr_opb_out	: out STD_LOGIC_VECTOR (5 downto 0);
+    addr_opb_in		: in STD_LOGIC_VECTOR (4 downto 0);    
+    addr_opb_out	: out STD_LOGIC_VECTOR (4 downto 0);
     addr_Z_in		: in std_logic_vector(9 downto 0);
     addr_Z_out		: out std_logic_vector(9 downto 0);	
     
-    opcode_in		: in std_logic_vector(4 downto 0);
-    opcode_out		: out std_logic_vector(4 downto 0);
-    jmpcode_in		: in std_logic_vector(1 downto 0);
-    jmpcode_out		: out std_logic_vector(1 downto 0);
-    mask_sreg_in	: in STD_LOGIC_VECTOR (2 downto 0);
-    mask_sreg_out	: out STD_LOGIC_VECTOR (2 downto 0);
-	mdec_op_in		: in std_logic_vector(2 downto 0);
-	mdec_op_out		: out std_logic_vector(2 downto 0);
-    
+    addr_rel_out	: out  std_logic_vector (PMADDR_WIDTH-1 downto 0) := (others => '0');
+    addr_rel_in		: in  std_logic_vector (PMADDR_WIDTH-1 downto 0) := (others => '0');
+        
+    opcode_in		: in std_logic_vector(3 downto 0);
+    opcode_out		: out std_logic_vector(3 downto 0);
+    jmpcode_in		: in std_logic_vector(1 downto 0) := jmpCode_inc;
+    jmpcode_out		: out std_logic_vector(1 downto 0) := jmpCode_inc;
+    mask_sreg_in	: in STD_LOGIC_VECTOR (1 downto 0):= (others => '0');
+    mask_sreg_out	: out STD_LOGIC_VECTOR (1 downto 0):= (others => '0');
+	stack_op_in		: in std_logic_vector(1 downto 0);	
+	
     data_opa_in		: in STD_LOGIC_VECTOR (7 downto 0);
     data_opa_out	: out STD_LOGIC_VECTOR (7 downto 0);
     data_opb_in		: in STD_LOGIC_VECTOR (7 downto 0);
     data_opb_out	: out STD_LOGIC_VECTOR (7 downto 0);				-- also used for jmp-values @see decoder.vhd
+    data_opc_in	: in std_logic;
+    data_opc_out: out std_logic;
     addr_pm_in		: in STD_LOGIC_VECTOR (PMADDR_WIDTH-1 downto 0);	-- used as data (store)
     addr_pm_out		: out STD_LOGIC_VECTOR (PMADDR_WIDTH-1 downto 0);	-- used as data (store)
-        
-    w_e_in			: bit;
-    w_e_out			: out bit;
     
-    sel_alu_in		: in bit;
-    sel_alu_out		: out bit;
-    sel_opb_in		: in bit;
-	sel_opb_out		: out bit;
-    sel_Zaddr_in	: in bit;
-	sel_Zaddr_out	: out bit;
+    sreg_in			: in std_logic_vector(1 downto 0):= (others => '0');
+    sreg_out		: out std_logic_vector(1 downto 0):= (others => '0');
+        
+    w_e_rf_in		: in std_logic;
+    w_e_rf_out		: out std_logic;	
+	w_e_dm_in		: in std_logic;
+    w_e_dm_out		: out std_logic;
 	
-	sel_opb_fw		: out bit;
-    sel_opa_fw		: out bit;
-    sel_ZH_fw		: out bit;
-    sel_ZL_fw		: out bit    
+    sel_alu_in		: in std_logic;
+    sel_alu_out		: out std_logic;
+    en_opB_in		: in std_logic;
+	en_opB_out		: out std_logic;
+	en_rcall_in		: in std_logic;
+	en_rcall_out	: out std_logic;
+    en_Z_in			: in std_logic;
+	en_Z_out		: out std_logic
     );    
 end instr_exec;
 
--- Rudimentaerer Programmzaehler ohne Ruecksetzen und springen...
 
 architecture Behavioral of instr_exec is
-  signal addr_opa_p2 	: std_logic_vector(4 downto 0) := (others => '0');
-  signal addr_opa_wb 	: std_logic_vector(4 downto 0) := (others => '0');
-  signal w_e_p2			: bit := '0';
-  signal w_e_wb			: bit := '0';
+	signal sp_curr : std_logic_vector(9 downto 0) := (others => '1');
+	signal sp_new : std_logic_vector(9 downto 0) := (others => '1');
+	signal sp_op : std_logic_vector(9 downto 0) := (others => '0');
+	signal addr_dm : std_logic_vector(9 downto 0) := (others => '0');
 begin
   process(clk)
   begin  -- process count
     if clk'event and clk = '1' then 
 	
 		addr_opa_out 	<= addr_opa_in;
-		addr_opa_p2 	<= addr_opa_in;
-		--addr_opa_out2	<= addr_opa_p2;
-		addr_opa_wb 	<= addr_opa_p2;
 		addr_opb_out 	<= addr_opb_in;
-		addr_Z_out 		<= addr_Z_in;		
+		addr_Z_out 		<= addr_dm;		
+		addr_rel_out	<= addr_rel_in;		
 		
 		data_opa_out 	<= data_opa_in;
 		data_opb_out 	<= data_opb_in;
+		data_opc_out	<= data_opc_in;
 		addr_pm_out 	<= addr_pm_in;
 		
-		sel_opb_out 	<= sel_opb_in;
+		sreg_out		<= sreg_in;
+		
+		en_opB_out 		<= en_opB_in;
 		sel_alu_out 	<= sel_alu_in;
-		sel_Zaddr_out 	<= sel_Zaddr_in;
+		en_Z_out 		<= en_Z_in;
+		en_rcall_out	<= en_rcall_in;
 		
 		opcode_out 		<= opcode_in;		
 		jmpcode_out		<= jmpcode_in;
 		
 		mask_sreg_out 	<= mask_sreg_in;
-		mdec_op_out 	<= mdec_op_in;
 		
-		w_e_out 		<= w_e_in;
-		w_e_p2			<= w_e_in;
-		w_e_wb			<= w_e_p2;		
+		w_e_rf_out 		<= w_e_rf_in;		
+		w_e_dm_out		<= w_e_dm_in;
+
+		sp_curr 		<= sp_new;
     end if;
   end process;
-
-
-  -- sneaky bug alert (!!!)
-  set_opa_fw:process(addr_opa_in, addr_opa_wb, w_e_wb)
-	variable cmp_data_addr : std_logic_vector(4 downto 0) := (others => '1');
-  begin
-	cmp_data_addr := addr_opa_in xor addr_opa_wb;
-	
-	sel_opa_fw <= '0';	
-	case (cmp_data_addr) is
-		when "00000" 	=> sel_opa_fw <= w_e_wb;
-		when others 	=> null;
-	end case;
-	
-	sel_ZH_fw <= '0';
-	sel_ZL_fw <= '0';
-	case (addr_opa_wb) is
-		when "11111"	=> sel_ZH_fw <= w_e_wb;	--0x31
-		when "11110"	=> sel_ZL_fw <= w_e_wb;	--0x30
-		when others 	=> null;
-	end case;
-  end process;
-  
-  
-  set_opb_fw:process(addr_opb_in, addr_opa_wb, sel_opb_in)
-	variable cmp_data_addr : std_logic_vector(4 downto 0) := (others => '1');
-  begin
-	cmp_data_addr := addr_opb_in(4 downto 0) xor addr_opa_wb;
-	
-	sel_opb_fw <= '0';
-	case (cmp_data_addr) is
-		when "00000" 	=> sel_opb_fw <= sel_opb_in;
-		when others 	=> null;
-	end case;	
-  end process;
-  
   
 
+  	sel_sp_op:process(stack_op_in)
+	begin
+		case stack_op_in is 			
+			when stackOP_push	=> sp_op <= (others => '1');
+			when stackOP_pop	=> sp_op <= "0000000001";
+			when others 		=> sp_op <= (others	=> '0');
+		end case; 
+	end process;
+		
+	sp_new <= std_logic_vector(unsigned(sp_curr) + unsigned(sp_op));
+	
+	set_addr:process(stack_op_in, addr_Z_in, sp_curr, sp_new)
+	begin
+		case stack_op_in is 
+			--Stack Pointer is post-decremented by 1 after the PUSH/RCALL
+			when stackOP_push 	=> addr_dm <= sp_curr;
+			--Stack Pointer is pre-incremented by 1 before the POP/RET
+			when stackOP_pop	=> addr_dm <= sp_new;									
+			when others 		=> addr_dm <= addr_Z_in;
+		end case; 
+	end process;
+  
 end Behavioral;
